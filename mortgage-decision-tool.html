@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mortgage Decision Support Tool</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .container {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      width: 100%;
+      max-width: 640px;
+      overflow: hidden;
+    }
+
+    .header {
+      background: #1F4E79;
+      color: #fff;
+      padding: 28px 32px 20px;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      font-size: 13px;
+      opacity: 0.82;
+      line-height: 1.5;
+    }
+
+    .disclaimer {
+      background: #fff8e1;
+      border-left: 4px solid #f9a825;
+      padding: 12px 20px;
+      font-size: 13px;
+      color: #5d4037;
+      font-weight: 500;
+    }
+
+    .body {
+      padding: 28px 32px 32px;
+    }
+
+    .progress-bar-wrap {
+      background: #e8edf2;
+      border-radius: 99px;
+      height: 6px;
+      margin-bottom: 28px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #1F4E79;
+      border-radius: 99px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    .question-block {
+      display: none;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .question-block.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .question-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1F4E79;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .question-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .warning-box {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #7d5a00;
+      font-weight: 500;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .warning-box::before {
+      content: "⚠️";
+      flex-shrink: 0;
+    }
+
+    .options {
+      display: flex;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .option-btn {
+      flex: 1;
+      padding: 14px;
+      border: 2px solid #d0d8e4;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: center;
+    }
+
+    .option-btn:hover {
+      border-color: #1F4E79;
+      background: #eef3f8;
+      color: #1F4E79;
+    }
+
+    .option-btn.selected {
+      border-color: #1F4E79;
+      background: #1F4E79;
+      color: #fff;
+    }
+
+    .result-block {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-block.active {
+      display: block;
+    }
+
+    .result-icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+
+    .result-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1F4E79;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    .result-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a1a;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    .result-notes {
+      background: #f0f4f8;
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 13px;
+      color: #444;
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    .result-notes strong {
+      color: #1F4E79;
+    }
+
+    .restart-btn {
+      background: #1F4E79;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 13px 28px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+
+    .restart-btn:hover {
+      background: #163d61;
+    }
+
+    .breadcrumb {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 20px;
+      min-height: 16px;
+    }
+
+    .breadcrumb span {
+      color: #1F4E79;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Mortgage Decision Support Tool</h1>
+    <p>A branching logic tool to guide agents to the correct resolution pathway based on account status.</p>
+  </div>
+  <div class="disclaimer">
+    ⚠️ Please ensure the customer is fully verified before proceeding.
+  </div>
+  <div class="body">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="breadcrumb" id="breadcrumb"></div>
+
+    <!-- Q1 -->
+    <div class="question-block active" id="q1">
+      <div class="question-label">Question 1 of 4</div>
+      <div class="question-text">Is the mortgage account up to date?</div>
+      <div class="options">
+        <button class="option-btn" onclick="answer('q1','yes')">Yes</button>
+        <button class="option-btn" onclick="answer('q1','no')">No</button>
+      </div>
+    </div>
+
+    <!-- Q2 (if Q1=yes) -->
+    <div class="question-block" id="q2a">
+      <div class="question-label">Question 2 of 4</div>
+      <div class="question-text">Is the customer calling to explore options on their Mortgage Agreement?</div>
+      <div class="options">
+        <button class="option-btn" onclick="answer('q2a','yes')">Yes</button>
+        <button class="option-btn" onclick="answer('q2a','no')">No</button>
+      </div>
+    </div>
+
+    <!-- Q3 (if Q1=yes, Q2=yes) -->
+    <div class="question-block" id="q3a">
+      <div class="question-label">Question 3 of 4</div>
+      <div class="question-text">Are there other reasons why the customer is struggling to pay the mortgage going forward?</div>
+      <div class="options">
+        <button class="option-btn" onclick="answer('q3a','yes')">Yes</button>
+        <button class="option-btn" onclick="answer('q3a','no')">No</button>
+      </div>
+    </div>
+
+    <!-- Q2b (if Q1=no) — GA Marker check -->
+    <div class="question-block" id="q2b">
+      <div class="question-label">Question 2 of 4</div>
+      <div class="question-text">Does the mortgage account have a General Arrears (GA) marker?</div>
+      <div class="options">
+        <button class="option-btn" onclick="answer('q2b','yes')">Yes</button>
+        <button class="option-btn" onclick="answer('q2b','no')">No</button>
+      </div>
+    </div>
+
+    <!-- Q3b (if Q1=no, Q2b=yes) — Joint account -->
+    <div class="question-block" id="q3b">
+      <div class="warning-box">Please confirm and update the customer's correspondence address in the account management system before proceeding.</div>
+      <div class="question-label">Question 3 of 4</div>
+      <div class="question-text">Is this a joint account?</div>
+      <div class="options">
+        <button class="option-btn" onclick="answer('q3b','yes')">Yes</button>
+        <button class="option-btn" onclick="answer('q3b','no')">No</button>
+      </div>
+    </div>
+
+    <!-- Q4 (if Q3b=yes) — Separation -->
+    <div class="question-block" id="q4">
+      <div class="warning-box">Please ensure you discuss the mortgage with both account holders and consider the Income & Expenditure results for each party.</div>
+      <div class="question-label">Question 4 of 4</div>
+      <div class="question-text">Are the joint account holders either separated or currently going through separation?</div>
+      <div class="options">
+        <button class="option-btn" onclick="answer('q4','yes')">Yes</button>
+        <button class="option-btn" onclick="answer('q4','no')">No</button>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="result-block" id="result">
+      <div class="result-icon" id="resultIcon"></div>
+      <div class="result-label">Recommended Action</div>
+      <div class="result-text" id="resultText"></div>
+      <div class="result-notes" id="resultNotes"></div>
+      <button class="restart-btn" onclick="restart()">↩ Start Over</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const state = {};
+  const totalSteps = 4;
+
+  const results = {
+    wrong_team: {
+      icon: "🔄",
+      text: "Transfer to the appropriate team.",
+      notes: "<strong>Reason:</strong> The customer's query falls outside this team's remit. Identify the correct department based on the nature of the enquiry and complete a warm transfer."
+    },
+    explore_situation: {
+      icon: "🔍",
+      text: "Explore the customer's situation in full.",
+      notes: "<strong>Reason:</strong> The customer is experiencing broader financial difficulty beyond the mortgage. Conduct a full Income & Expenditure review and explore all available support options before recommending a repayment pathway."
+    },
+    transfer_mortgage_team: {
+      icon: "📋",
+      text: "Transfer the call to the Mortgage Solutions team.",
+      notes: "<strong>Reason:</strong> The customer wishes to explore options under their Mortgage Agreement. Transfer to the specialist team who can review and discuss available arrangements."
+    },
+    regular_process: {
+      icon: "✅",
+      text: "Proceed with standard arrears process.",
+      notes: "<strong>Reason:</strong> No GA marker is present and the account does not meet the criteria for an alternative pathway. Follow the standard process for accounts in arrears."
+    },
+    explore_joint: {
+      icon: "🔍",
+      text: "Explore the situation — joint account with separation.",
+      notes: "<strong>Reason:</strong> Joint account holders are separated or separating. This changes the approach — ensure you discuss the mortgage position with both parties and consider each party's Income & Expenditure independently before recommending next steps."
+    },
+    explore_joint_standard: {
+      icon: "🔍",
+      text: "Explore the situation — joint account.",
+      notes: "<strong>Reason:</strong> This is a joint account with a GA marker. Ensure both account holders are considered in the Income & Expenditure review and discuss next steps with both parties."
+    },
+    explore_single: {
+      icon: "🔍",
+      text: "Explore the customer's situation.",
+      notes: "<strong>Reason:</strong> The account has a GA marker and the customer is the sole account holder. Conduct a full Income & Expenditure review and proceed with the appropriate repayment arrangement."
+    }
+  };
+
+  function answer(question, value) {
+    state[question] = value;
+
+    // Highlight selected button
+    document.querySelectorAll(`#${question} .option-btn`).forEach(btn => {
+      btn.classList.toggle('selected', btn.textContent.toLowerCase() === value);
+    });
+
+    hideAll();
+    updateProgress();
+    updateBreadcrumb();
+
+    // Decision tree routing
+    if (question === 'q1') {
+      if (value === 'yes') show('q2a');
+      else show('q2b');
+
+    } else if (question === 'q2a') {
+      if (value === 'no') showResult('wrong_team');
+      else show('q3a');
+
+    } else if (question === 'q3a') {
+      if (value === 'yes') showResult('explore_situation');
+      else showResult('transfer_mortgage_team');
+
+    } else if (question === 'q2b') {
+      if (value === 'no') showResult('regular_process');
+      else show('q3b');
+
+    } else if (question === 'q3b') {
+      if (value === 'yes') show('q4');
+      else showResult('explore_single');
+
+    } else if (question === 'q4') {
+      if (value === 'yes') showResult('explore_joint');
+      else showResult('explore_joint_standard');
+    }
+  }
+
+  function hideAll() {
+    document.querySelectorAll('.question-block, .result-block').forEach(el => {
+      el.classList.remove('active');
+    });
+  }
+
+  function show(id) {
+    document.getElementById(id).classList.add('active');
+  }
+
+  function showResult(key) {
+    const r = results[key];
+    document.getElementById('resultIcon').textContent = r.icon;
+    document.getElementById('resultText').textContent = r.text;
+    document.getElementById('resultNotes').innerHTML = r.notes;
+    document.getElementById('result').classList.add('active');
+    document.getElementById('progressBar').style.width = '100%';
+  }
+
+  function updateProgress() {
+    const answered = Object.keys(state).length;
+    const pct = Math.min((answered / totalSteps) * 100, 90);
+    document.getElementById('progressBar').style.width = pct + '%';
+  }
+
+  function updateBreadcrumb() {
+    const labels = {
+      q1: 'Mortgage status',
+      q2a: 'Exploring options',
+      q2b: 'GA marker',
+      q3a: 'Financial difficulty',
+      q3b: 'Joint account',
+      q4: 'Separation status'
+    };
+    const crumbs = Object.keys(state).map(k => {
+      return `<span>${labels[k] || k}</span>: ${state[k]}`;
+    });
+    document.getElementById('breadcrumb').innerHTML = crumbs.join(' → ');
+  }
+
+  function restart() {
+    Object.keys(state).forEach(k => delete state[k]);
+    document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('breadcrumb').innerHTML = '';
+    hideAll();
+    show('q1');
+  }
+</script>
+</body>
+</html>

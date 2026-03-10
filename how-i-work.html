@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How I Work — Myles Chuatico</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0f2744;
+    --navy-mid: #1a3a5c;
+    --accent: #c8a96e;
+    --accent-light: #e8d5a8;
+    --off-white: #f7f4ef;
+    --text: #1a1a1a;
+    --muted: #6b7280;
+    --border: #e2ddd5;
+    --white: #ffffff;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--off-white);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 20px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(247,244,239,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--navy);
+    text-decoration: none;
+  }
+
+  .nav-links { display: flex; gap: 36px; list-style: none; }
+
+  .nav-links a {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover, .nav-links a.active { color: var(--navy); }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 140px 48px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: slideUp 0.7s ease 0.1s forwards;
+  }
+
+  .hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(36px, 5vw, 56px);
+    line-height: 1.05;
+    color: var(--navy);
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: slideUp 0.7s ease 0.25s forwards;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-body {
+    font-size: 16px;
+    font-weight: 300;
+    color: #444;
+    line-height: 1.9;
+    opacity: 0;
+    animation: slideUp 0.7s ease 0.4s forwards;
+  }
+
+  .hero-aside {
+    opacity: 0;
+    animation: slideUp 0.7s ease 0.5s forwards;
+  }
+
+  .pull-quote {
+    border-left: 3px solid var(--accent);
+    padding: 20px 24px;
+    background: var(--white);
+    border-radius: 0 8px 8px 0;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+
+  .pull-quote p {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    font-style: italic;
+    color: var(--navy);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .pull-quote cite {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: normal;
+    letter-spacing: 0.5px;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    max-width: 860px;
+    margin: 0 auto;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── PRINCIPLES ── */
+  .principles {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 80px 48px;
+  }
+
+  .section-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 4vw, 40px);
+    color: var(--navy);
+    line-height: 1.1;
+    margin-bottom: 48px;
+  }
+
+  .principles-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .principle-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .principle-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+  }
+
+  .principle-card.wide {
+    grid-column: span 2;
+  }
+
+  .principle-number {
+    font-family: 'DM Serif Display', serif;
+    font-size: 40px;
+    color: var(--accent-light);
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+
+  .principle-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 10px;
+  }
+
+  .principle-body {
+    font-size: 14px;
+    font-weight: 300;
+    color: #444;
+    line-height: 1.9;
+  }
+
+  .principle-body strong {
+    font-weight: 600;
+    color: var(--navy);
+  }
+
+  /* ── DARK BAND ── */
+  .dark-band {
+    background: var(--navy);
+    padding: 80px 48px;
+  }
+
+  .dark-band-inner {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  .dark-band .section-eyebrow { color: var(--accent); }
+  .dark-band .section-title { color: #fff; margin-bottom: 40px; }
+
+  .traits-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .trait-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 20px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .trait-card:hover {
+    background: rgba(255,255,255,0.09);
+    border-color: rgba(200,169,110,0.4);
+  }
+
+  .trait-icon { font-size: 24px; margin-bottom: 10px; }
+
+  .trait-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .trait-body {
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* ── APPROACH ── */
+  .approach {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 80px 48px;
+  }
+
+  .approach-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+
+  .approach-flow::before {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 24px;
+    bottom: 24px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .approach-step {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    padding: 20px 0;
+    position: relative;
+  }
+
+  .step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: #fff;
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-content { padding-top: 8px; }
+
+  .step-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+
+  .step-body {
+    font-size: 14px;
+    font-weight: 300;
+    color: #555;
+    line-height: 1.8;
+  }
+
+  /* ── CTA ── */
+  .cta-band {
+    background: var(--accent);
+    padding: 60px 48px;
+    text-align: center;
+  }
+
+  .cta-band h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: var(--navy);
+    margin-bottom: 12px;
+  }
+
+  .cta-band p {
+    font-size: 15px;
+    color: rgba(15,39,68,0.75);
+    margin-bottom: 28px;
+    font-weight: 300;
+  }
+
+  .cta-btn {
+    display: inline-block;
+    background: var(--navy);
+    color: #fff;
+    padding: 14px 32px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .cta-btn:hover { background: #163d61; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--navy);
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+    padding: 28px;
+    font-size: 12px;
+  }
+
+  @media (max-width: 768px) {
+    nav { padding: 16px 24px; }
+    .nav-links { gap: 20px; }
+    .hero { grid-template-columns: 1fr; gap: 40px; padding: 120px 24px 60px; }
+    .principles { padding: 60px 24px; }
+    .principles-grid { grid-template-columns: 1fr; }
+    .principle-card.wide { grid-column: span 1; }
+    .traits-grid { grid-template-columns: 1fr 1fr; }
+    .dark-band { padding: 60px 24px; }
+    .approach { padding: 60px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">Myles Chuatico</a>
+  <ul class="nav-links">
+    <li><a href="index.html#about">About</a></li>
+    <li><a href="index.html#projects">Projects</a></li>
+    <li><a href="index.html#tool">Live Demo</a></li>
+    <li><a href="index.html#docs">Docs</a></li>
+    <li><a href="how-i-work.html" class="active">How I Work</a></li>
+    <li><a href="index.html#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div>
+    <div class="hero-eyebrow">Working Style</div>
+    <h1 class="hero-title">I figure<br>things <em>out.</em></h1>
+    <p class="hero-body">I'm not a developer. I don't whiteboard solutions before diving in. What I do is look at a broken or missing process, decide it's unacceptable, and then find a way to fix it — even if that means learning something new on the fly to get it done.</p>
+  </div>
+  <div class="hero-aside">
+    <div class="pull-quote">
+      <p>"Most people stop at 'I can't code.' I just Google until I can."</p>
+      <cite>— Myles Chuatico</cite>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- PRINCIPLES -->
+<div class="principles">
+  <div class="section-eyebrow">How I Think</div>
+  <h2 class="section-title">A few things that are<br>consistently true about me.</h2>
+
+  <div class="principles-grid">
+
+    <div class="principle-card">
+      <div class="principle-number">01</div>
+      <div class="principle-title">I build, I don't just document.</div>
+      <div class="principle-body">When I find a gap, my instinct is to close it — not write a report about it. The eLinq pipeline, the mortgage decision tool, the MPR automation suite: none of those were assigned to me. I saw something that didn't work and built the fix.</div>
+    </div>
+
+    <div class="principle-card">
+      <div class="principle-number">02</div>
+      <div class="principle-title">I learn what the problem needs.</div>
+      <div class="principle-body">I'm not a coder. But I've written batch scripts, built Power Query pipelines, and shipped a full-stack JavaScript tool. <strong>I don't let not knowing something be a reason not to try.</strong> I pick up what I need to solve the problem in front of me.</div>
+    </div>
+
+    <div class="principle-card">
+      <div class="principle-number">03</div>
+      <div class="principle-title">I care about accuracy.</div>
+      <div class="principle-body">I don't claim things I didn't do. When something I built was partially someone else's work, I'll tell you. When a metric is real but unverifiable, I'll flag it. I'd rather undersell and be accurate than oversell and get caught out in an interview.</div>
+    </div>
+
+    <div class="principle-card">
+      <div class="principle-number">04</div>
+      <div class="principle-title">Process rigor isn't optional.</div>
+      <div class="principle-body">Everything I deploy goes through UAT before production. I document with checklists, screenshots, and audit trails — not because someone told me to, but because I've seen what happens when you skip it. <strong>Discipline in the build prevents incidents in production.</strong></div>
+    </div>
+
+    <div class="principle-card wide">
+      <div class="principle-number">05</div>
+      <div class="principle-title">I work best when given a problem, not a prescription.</div>
+      <div class="principle-body">Tell me what's broken or what's needed. I'll figure out how to get there. I'm most effective when I have ownership of a problem end-to-end — from understanding the gap, through building the solution, to seeing it stable in production. I don't need to be handed a method. I need to understand the goal.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DARK BAND — WORKING STYLE -->
+<div class="dark-band">
+  <div class="dark-band-inner">
+    <div class="section-eyebrow">Working Style</div>
+    <h2 class="section-title">How I actually operate<br>day to day.</h2>
+
+    <div class="traits-grid">
+
+      <div class="trait-card">
+        <div class="trait-icon">🎯</div>
+        <div class="trait-title">Mostly solo, comfortably collaborative</div>
+        <div class="trait-body">I do my best work independently — I'm self-directed and don't need a lot of check-ins to stay on track. But I'm not precious about it. I coordinate with stakeholders, gather input from the people who know the process best, and align with leadership before go-lives.</div>
+      </div>
+
+      <div class="trait-card">
+        <div class="trait-icon">⚡</div>
+        <div class="trait-title">Async or in-person — either works</div>
+        <div class="trait-body">I've worked across both without friction. I document well enough that async handoffs don't break things, and I communicate clearly enough in person that meetings don't drag. Format doesn't matter much — clarity does.</div>
+      </div>
+
+      <div class="trait-card">
+        <div class="trait-icon">🔧</div>
+        <div class="trait-title">I dive in first, refine as I go</div>
+        <div class="trait-body">I don't whiteboard before I start. I get something working, test it, find what's wrong, and improve it. The go-live checklist and UAT process are my structure — everything before that tends to be exploratory and hands-on.</div>
+      </div>
+
+      <div class="trait-card">
+        <div class="trait-icon">📊</div>
+        <div class="trait-title">I present what I build</div>
+        <div class="trait-body">Toastmasters Presentation Mastery Level 3 — not just a line on a resume. I've presented utilization findings to AVPs, walked leadership through platform KPIs, and facilitated stakeholder reviews. I can communicate technical work to non-technical audiences.</div>
+      </div>
+
+      <div class="trait-card">
+        <div class="trait-icon">🌏</div>
+        <div class="trait-title">Cross-functional by default</div>
+        <div class="trait-body">My work has always sat at the intersection of ops, tech, and people. I've coordinated with IT, finance leadership, department managers, frontline agents, and C-suite-adjacent stakeholders — often on the same project. I'm comfortable at any level of the org.</div>
+      </div>
+
+      <div class="trait-card">
+        <div class="trait-icon">🧠</div>
+        <div class="trait-title">Honest about what I don't know</div>
+        <div class="trait-body">If I've never done something, I'll tell you — and then tell you how I'd go about figuring it out. I've never needed to pretend to know more than I do. The track record of figuring things out on the fly speaks for itself.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- APPROACH FLOW -->
+<div class="approach">
+  <div class="section-eyebrow">My Process</div>
+  <h2 class="section-title">How a typical initiative<br>goes for me.</h2>
+
+  <div class="approach-flow">
+
+    <div class="approach-step">
+      <div class="step-circle">1</div>
+      <div class="step-content">
+        <div class="step-title">Notice the gap</div>
+        <div class="step-body">Something is slow, broken, missing, or invisible. Usually it's a process that relies on someone remembering to do it manually, or a question leadership can't answer because the data doesn't exist yet.</div>
+      </div>
+    </div>
+
+    <div class="approach-step">
+      <div class="step-circle">2</div>
+      <div class="step-content">
+        <div class="step-title">Understand it properly</div>
+        <div class="step-body">I talk to the people actually doing the work — agents, team leads, whoever touches the process day-to-day. I want to know what actually happens, not what the SOP says happens. Then I talk to whoever owns the outcome to understand what "fixed" looks like.</div>
+      </div>
+    </div>
+
+    <div class="approach-step">
+      <div class="step-circle">3</div>
+      <div class="step-content">
+        <div class="step-title">Build something that works</div>
+        <div class="step-body">I start with what I know, pick up what I don't, and get a working version. It doesn't have to be perfect — it has to work and be testable. I build in UAT first, always.</div>
+      </div>
+    </div>
+
+    <div class="approach-step">
+      <div class="step-circle">4</div>
+      <div class="step-content">
+        <div class="step-title">Test it properly</div>
+        <div class="step-body">UAT isn't a checkbox. I test it from the user's perspective, edge cases included. I document everything with screenshots. I get stakeholder sign-off before anything goes near production.</div>
+      </div>
+    </div>
+
+    <div class="approach-step">
+      <div class="step-circle">5</div>
+      <div class="step-content">
+        <div class="step-title">Ship it and watch it</div>
+        <div class="step-body">Production rollout follows the checklist. Post-deployment I monitor closely — first few days especially. If something breaks, I want to catch it before anyone else does.</div>
+      </div>
+    </div>
+
+    <div class="approach-step">
+      <div class="step-circle">6</div>
+      <div class="step-content">
+        <div class="step-title">Document and hand off cleanly</div>
+        <div class="step-body">Work instruction manuals, agent guides, knowledge base articles — if I built it, I document it well enough that someone else can run it without me. The goal is never to be the single point of failure.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta-band">
+  <h2>Want to work together?</h2>
+  <p>I'm actively looking for operations analyst, business analyst, and process improvement roles.<br>Open to remote, hybrid, or on-site in Southern California.</p>
+  <a href="index.html#contact" class="cta-btn">Get In Touch</a>
+</div>
+
+<footer>
+  © 2026 Myles Chuatico · Orange County, CA · Open to remote & hybrid roles
+</footer>
+
+</body>
+</html>

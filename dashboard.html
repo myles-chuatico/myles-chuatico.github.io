@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MFS Operations Dashboard — ServiceDesk Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --pbi-bg: #f3f2f1;
+    --pbi-panel: #ffffff;
+    --pbi-header: #252423;
+    --pbi-accent: #0078d4;
+    --pbi-accent2: #107c10;
+    --pbi-warn: #d83b01;
+    --pbi-gold: #c8a96e;
+    --pbi-border: #e1dfdd;
+    --pbi-text: #323130;
+    --pbi-muted: #605e5c;
+    --pbi-light: #f3f2f1;
+    --sidebar: #201f1e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--pbi-bg);
+    color: var(--pbi-text);
+    font-size: 12px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--pbi-header);
+    height: 40px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 16px;
+    flex-shrink: 0;
+    border-bottom: 1px solid #3a3937;
+  }
+
+  .topbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .pbi-icon {
+    width: 20px;
+    height: 20px;
+    background: #f2c811;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #201f1e;
+  }
+
+  .topbar-divider { width: 1px; height: 20px; background: #3a3937; }
+
+  .topbar-title { color: #c8c6c4; font-size: 12px; }
+  .topbar-subtitle { color: #797775; font-size: 11px; margin-left: auto; }
+
+  .topbar-badge {
+    background: #0078d4;
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── LAYOUT ── */
+  .app-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 180px;
+    background: var(--sidebar);
+    flex-shrink: 0;
+    padding: 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #797775;
+    padding: 8px 16px 4px;
+    margin-top: 8px;
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    color: #c8c6c4;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-left: 3px solid transparent;
+  }
+
+  .sidebar-item:hover { background: rgba(255,255,255,0.06); }
+
+  .sidebar-item.active {
+    background: rgba(0,120,212,0.15);
+    border-left-color: #0078d4;
+    color: #fff;
+  }
+
+  .sidebar-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px 4px;
+  }
+
+  .page-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--pbi-text);
+  }
+
+  .page-subtitle { font-size: 11px; color: var(--pbi-muted); margin-top: 2px; }
+
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .filter-pill {
+    background: #fff;
+    border: 1px solid var(--pbi-border);
+    border-radius: 2px;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: var(--pbi-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  .filter-pill.active {
+    border-color: #0078d4;
+    color: #0078d4;
+    background: #eff6fc;
+  }
+
+  .filter-pill .arrow { font-size: 9px; }
+
+  /* ── KPI CARDS ── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .kpi-card {
+    background: var(--pbi-panel);
+    border: 1px solid var(--pbi-border);
+    border-radius: 2px;
+    padding: 12px 14px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .kpi-card.blue::before { background: #0078d4; }
+  .kpi-card.green::before { background: #107c10; }
+  .kpi-card.orange::before { background: #d83b01; }
+  .kpi-card.gold::before { background: #c8a96e; }
+  .kpi-card.purple::before { background: #8764b8; }
+
+  .kpi-label {
+    font-size: 10px;
+    color: var(--pbi-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  .kpi-value {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .kpi-card.blue .kpi-value { color: #0078d4; }
+  .kpi-card.green .kpi-value { color: #107c10; }
+  .kpi-card.orange .kpi-value { color: #d83b01; }
+  .kpi-card.gold .kpi-value { color: #8a6e2f; }
+  .kpi-card.purple .kpi-value { color: #8764b8; }
+
+  .kpi-delta {
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .kpi-delta.up { color: #107c10; }
+  .kpi-delta.down { color: #d83b01; }
+  .kpi-delta.neutral { color: var(--pbi-muted); }
+
+  /* ── CHARTS ROW ── */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1fr;
+    gap: 8px;
+  }
+
+  .chart-card {
+    background: var(--pbi-panel);
+    border: 1px solid var(--pbi-border);
+    border-radius: 2px;
+    padding: 12px 14px;
+  }
+
+  .chart-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--pbi-text);
+    margin-bottom: 2px;
+  }
+
+  .chart-sub {
+    font-size: 10px;
+    color: var(--pbi-muted);
+    margin-bottom: 10px;
+  }
+
+  .chart-wrap {
+    position: relative;
+  }
+
+  /* ── UNIT TABLE ── */
+  .bottom-row {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 8px;
+  }
+
+  .table-card {
+    background: var(--pbi-panel);
+    border: 1px solid var(--pbi-border);
+    border-radius: 2px;
+    padding: 12px 14px;
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+
+  thead th {
+    background: #f3f2f1;
+    padding: 6px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--pbi-muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--pbi-border);
+  }
+
+  thead th:not(:first-child) { text-align: right; }
+
+  tbody tr { border-bottom: 1px solid #f3f2f1; transition: background 0.1s; }
+  tbody tr:hover { background: #f9f8f7; }
+  tbody tr:last-child { border-bottom: none; }
+
+  tbody td { padding: 7px 8px; color: var(--pbi-text); }
+  tbody td:not(:first-child) { text-align: right; }
+
+  .unit-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  .sla-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .sla-bar {
+    width: 60px;
+    height: 6px;
+    background: #e1dfdd;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .sla-fill {
+    height: 100%;
+    border-radius: 3px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .badge.good { background: #dff6dd; color: #107c10; }
+  .badge.warn { background: #fff4ce; color: #835300; }
+  .badge.bad  { background: #fde7e9; color: #a4262c; }
+
+  /* ── TREND MINI ── */
+  .mini-trends {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .trend-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .trend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .trend-name { font-size: 10px; font-weight: 600; color: var(--pbi-muted); }
+  .trend-val  { font-size: 13px; font-weight: 700; color: var(--pbi-text); }
+
+  .trend-bar-bg {
+    height: 4px;
+    background: #e1dfdd;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .trend-bar-fill { height: 100%; border-radius: 2px; }
+
+  /* ── FOOTER ── */
+  .dash-footer {
+    background: var(--pbi-header);
+    padding: 4px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    border-top: 1px solid #3a3937;
+  }
+
+  .footer-note { font-size: 10px; color: #797775; }
+
+  .portfolio-badge {
+    background: rgba(200,169,110,0.2);
+    border: 1px solid rgba(200,169,110,0.4);
+    color: #c8a96e;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── PAGE TABS ── */
+  .page-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--pbi-header);
+    padding: 0 12px;
+    flex-shrink: 0;
+  }
+
+  .page-tab {
+    padding: 6px 16px;
+    font-size: 11px;
+    color: #797775;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .page-tab:hover { color: #c8c6c4; }
+  .page-tab.active { color: #fff; border-bottom-color: #0078d4; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="pbi-icon">P</div>
+    Power BI
+  </div>
+  <div class="topbar-divider"></div>
+  <div class="topbar-title">MFS Operations Dashboard — ServiceDesk Pro</div>
+  <div class="topbar-subtitle">Last refreshed: Jan 27, 2026 &nbsp;|&nbsp; Data source: ServiceDesk Pro API &nbsp;|&nbsp; Auto-refresh: Daily</div>
+  <div class="topbar-badge">LIVE</div>
+</div>
+
+<!-- PAGE TABS -->
+<div class="page-tabs">
+  <div class="page-tab active">📊 MFS Overview</div>
+  <div class="page-tab">📁 RAS</div>
+  <div class="page-tab">📁 CAS</div>
+  <div class="page-tab">📁 MBS</div>
+  <div class="page-tab">📁 PCST</div>
+  <div class="page-tab">📁 TSY</div>
+</div>
+
+<!-- APP BODY -->
+<div class="app-body">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-label">Views</div>
+    <div class="sidebar-item active">
+      <div class="sidebar-dot" style="background:#0078d4"></div>
+      MFS Overview
+    </div>
+    <div class="sidebar-item">
+      <div class="sidebar-dot" style="background:#107c10"></div>
+      SLA Compliance
+    </div>
+    <div class="sidebar-item">
+      <div class="sidebar-dot" style="background:#d83b01"></div>
+      Backlog Analysis
+    </div>
+    <div class="sidebar-item">
+      <div class="sidebar-dot" style="background:#8764b8"></div>
+      Resolution Time
+    </div>
+
+    <div class="sidebar-label">Units</div>
+    <div class="sidebar-item">
+      <div class="sidebar-dot" style="background:#0078d4"></div>
+      RAS
+    </div>
+    <div class="sidebar-item">
+      <div class="sidebar-dot" style="background:#107c10"></div>
+      CAS
+    </div>
+    <div class="sidebar-item">
+      <div class="sidebar-dot" style="background:#d83b01"></div>
+      MBS
+    </div>
+    <div class="sidebar-item">
+      <div class="sidebar-dot" style="background:#8764b8"></div>
+      PCST
+    </div>
+    <div class="sidebar-item">
+      <div class="sidebar-dot" style="background:#c8a96e"></div>
+      TSY
+    </div>
+
+    <div class="sidebar-label">Filters</div>
+    <div class="sidebar-item">
+      <div class="sidebar-dot" style="background:#797775"></div>
+      Date Range
+    </div>
+    <div class="sidebar-item">
+      <div class="sidebar-dot" style="background:#797775"></div>
+      Ticket Type
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">MFS Operations — Monthly Overview</div>
+        <div class="page-subtitle">January 2026 &nbsp;·&nbsp; All Finance Units &nbsp;·&nbsp; 26 business days</div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-pill active">Jan 2026 <span class="arrow">▾</span></div>
+        <div class="filter-pill">All Units <span class="arrow">▾</span></div>
+        <div class="filter-pill">All Types <span class="arrow">▾</span></div>
+      </div>
+    </div>
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Tickets Created</div>
+        <div class="kpi-value">6,670</div>
+        <div class="kpi-delta down">▼ 20.5% vs prev month (8,393)</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Tickets Resolved</div>
+        <div class="kpi-value">6,854</div>
+        <div class="kpi-delta up">▲ 4.3% vs prev month (6,570)</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">Unresolved & Overdue</div>
+        <div class="kpi-value">2,492</div>
+        <div class="kpi-delta up">▼ 9.2% vs prev month (2,745)</div>
+      </div>
+      <div class="kpi-card gold">
+        <div class="kpi-label">SLA Compliance</div>
+        <div class="kpi-value">88.81%</div>
+        <div class="kpi-delta down">▼ 4.76% vs prev month (93.57%)</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-label">Avg Resolution Time</div>
+        <div class="kpi-value">16.27</div>
+        <div class="kpi-delta down">▲ +3.73 bhrs vs prev (12.54)</div>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="charts-row">
+
+      <!-- Monthly Trend Line -->
+      <div class="chart-card">
+        <div class="chart-title">Monthly Ticket Volume — Created vs Resolved</div>
+        <div class="chart-sub">Jan 2025 – Jan 2026 &nbsp;·&nbsp; All Units</div>
+        <div class="chart-wrap" style="height:160px">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- SLA by Unit Bar -->
+      <div class="chart-card">
+        <div class="chart-title">SLA Compliance by Unit</div>
+        <div class="chart-sub">January 2026 &nbsp;·&nbsp; Target: 95%</div>
+        <div class="chart-wrap" style="height:160px">
+          <canvas id="slaChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Resolution Time -->
+      <div class="chart-card">
+        <div class="chart-title">Avg Resolution Time</div>
+        <div class="chart-sub">Business hours — Jan 2026</div>
+        <div class="mini-trends" style="margin-top:8px">
+          <div class="trend-row">
+            <div class="trend-header">
+              <span class="trend-name">RAS</span>
+              <span class="trend-val" style="color:#d83b01">23.1 bhrs</span>
+            </div>
+            <div class="trend-bar-bg"><div class="trend-bar-fill" style="width:92%;background:#d83b01"></div></div>
+          </div>
+          <div class="trend-row">
+            <div class="trend-header">
+              <span class="trend-name">CAS</span>
+              <span class="trend-val" style="color:#d83b01">18.4 bhrs</span>
+            </div>
+            <div class="trend-bar-bg"><div class="trend-bar-fill" style="width:73%;background:#d83b01"></div></div>
+          </div>
+          <div class="trend-row">
+            <div class="trend-header">
+              <span class="trend-name">MTS</span>
+              <span class="trend-val" style="color:#835300">14.2 bhrs</span>
+            </div>
+            <div class="trend-bar-bg"><div class="trend-bar-fill" style="width:57%;background:#c8a96e"></div></div>
+          </div>
+          <div class="trend-row">
+            <div class="trend-header">
+              <span class="trend-name">MBS</span>
+              <span class="trend-val" style="color:#107c10">11.8 bhrs</span>
+            </div>
+            <div class="trend-bar-bg"><div class="trend-bar-fill" style="width:47%;background:#107c10"></div></div>
+          </div>
+          <div class="trend-row">
+            <div class="trend-header">
+              <span class="trend-name">PCST</span>
+              <span class="trend-val" style="color:#107c10">9.3 bhrs</span>
+            </div>
+            <div class="trend-bar-bg"><div class="trend-bar-fill" style="width:37%;background:#107c10"></div></div>
+          </div>
+          <div class="trend-row">
+            <div class="trend-header">
+              <span class="trend-name">TSY</span>
+              <span class="trend-val" style="color:#107c10">8.1 bhrs</span>
+            </div>
+            <div class="trend-bar-bg"><div class="trend-bar-fill" style="width:32%;background:#107c10"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM ROW -->
+    <div class="bottom-row">
+
+      <!-- Unit Breakdown Table -->
+      <div class="table-card">
+        <div class="chart-title">Unit Performance Summary — January 2026</div>
+        <div class="chart-sub" style="margin-bottom:10px">All finance units &nbsp;·&nbsp; Sorted by ticket volume</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Unit</th>
+              <th>Created</th>
+              <th>Resolved</th>
+              <th>Overdue</th>
+              <th>SLA %</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="unit-dot" style="background:#0078d4"></span>RAS</td>
+              <td>2,180</td>
+              <td>2,090</td>
+              <td>890</td>
+              <td>
+                <div class="sla-bar-wrap">
+                  <div class="sla-bar"><div class="sla-fill" style="width:79%;background:#d83b01"></div></div>
+                  79.4%
+                </div>
+              </td>
+              <td><span class="badge bad">Below Target</span></td>
+            </tr>
+            <tr>
+              <td><span class="unit-dot" style="background:#107c10"></span>CAS</td>
+              <td>1,840</td>
+              <td>1,920</td>
+              <td>720</td>
+              <td>
+                <div class="sla-bar-wrap">
+                  <div class="sla-bar"><div class="sla-fill" style="width:85%;background:#d83b01"></div></div>
+                  85.2%
+                </div>
+              </td>
+              <td><span class="badge bad">Below Target</span></td>
+            </tr>
+            <tr>
+              <td><span class="unit-dot" style="background:#d83b01"></span>MBS</td>
+              <td>1,420</td>
+              <td>1,480</td>
+              <td>510</td>
+              <td>
+                <div class="sla-bar-wrap">
+                  <div class="sla-bar"><div class="sla-fill" style="width:91%;background:#c8a96e"></div></div>
+                  91.2%
+                </div>
+              </td>
+              <td><span class="badge warn">At Risk</span></td>
+            </tr>
+            <tr>
+              <td><span class="unit-dot" style="background:#8764b8"></span>PCST</td>
+              <td>780</td>
+              <td>810</td>
+              <td>220</td>
+              <td>
+                <div class="sla-bar-wrap">
+                  <div class="sla-bar"><div class="sla-fill" style="width:96%;background:#107c10"></div></div>
+                  96.1%
+                </div>
+              </td>
+              <td><span class="badge good">On Target</span></td>
+            </tr>
+            <tr>
+              <td><span class="unit-dot" style="background:#c8a96e"></span>TSY</td>
+              <td>450</td>
+              <td>554</td>
+              <td>152</td>
+              <td>
+                <div class="sla-bar-wrap">
+                  <div class="sla-bar"><div class="sla-fill" style="width:97%;background:#107c10"></div></div>
+                  97.3%
+                </div>
+              </td>
+              <td><span class="badge good">On Target</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Donut + Backlog -->
+      <div class="chart-card">
+        <div class="chart-title">Ticket Distribution by Unit</div>
+        <div class="chart-sub">January 2026 &nbsp;·&nbsp; % of total created</div>
+        <div class="chart-wrap" style="height:140px">
+          <canvas id="donutChart"></canvas>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+          <span style="font-size:10px;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0078d4"></span>RAS 32.7%</span>
+          <span style="font-size:10px;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#107c10"></span>CAS 27.6%</span>
+          <span style="font-size:10px;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#d83b01"></span>MBS 21.3%</span>
+          <span style="font-size:10px;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#8764b8"></span>PCST 11.7%</span>
+          <span style="font-size:10px;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c8a96e"></span>TSY 6.7%</span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="dash-footer">
+  <div class="footer-note">Data source: ServiceDesk Pro API &nbsp;·&nbsp; Refreshed daily via Power BI scheduled refresh &nbsp;·&nbsp; Built by Myles Chuatico</div>
+  <div class="portfolio-badge">⚠ PORTFOLIO SAMPLE — Data is illustrative</div>
+</div>
+
+<script>
+  // ── TREND CHART ──
+  const trendCtx = document.getElementById('trendChart').getContext('2d');
+  new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan\'26'],
+      datasets: [
+        {
+          label: 'Created',
+          data: [5831, 6200, 6800, 7100, 8965, 8650, 9538, 8325, 7745, 7560, 7613, 8393, 6670],
+          borderColor: '#0078d4',
+          backgroundColor: 'rgba(0,120,212,0.08)',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#0078d4',
+          tension: 0.3,
+          fill: true,
+        },
+        {
+          label: 'Resolved',
+          data: [5921, 6100, 6750, 7050, 8969, 8969, 9266, 8219, 7698, 7266, 7390, 7565, 6854],
+          borderColor: '#107c10',
+          backgroundColor: 'rgba(16,124,16,0.05)',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#107c10',
+          tension: 0.3,
+          fill: true,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10, family: 'Segoe UI' }, boxWidth: 12, padding: 10 } },
+        tooltip: { titleFont: { size: 10 }, bodyFont: { size: 10 } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 9 }, maxRotation: 0 }, grid: { color: '#f3f2f1' } },
+        y: {
+          ticks: { font: { size: 9 }, callback: v => v >= 1000 ? (v/1000).toFixed(1)+'k' : v },
+          grid: { color: '#f3f2f1' }
+        }
+      }
+    }
+  });
+
+  // ── SLA BAR CHART ──
+  const slaCtx = document.getElementById('slaChart').getContext('2d');
+  new Chart(slaCtx, {
+    type: 'bar',
+    data: {
+      labels: ['RAS','CAS','MBS','PCST','TSY'],
+      datasets: [
+        {
+          label: 'SLA %',
+          data: [79.4, 85.2, 91.2, 96.1, 97.3],
+          backgroundColor: ['#d83b01','#d83b01','#c8a96e','#107c10','#107c10'],
+          borderRadius: 2,
+          barPercentage: 0.6,
+        },
+        {
+          label: 'Target (95%)',
+          data: [95, 95, 95, 95, 95],
+          type: 'line',
+          borderColor: '#323130',
+          borderWidth: 1.5,
+          borderDash: [4, 3],
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10, family: 'Segoe UI' }, boxWidth: 12, padding: 8 } },
+        tooltip: { titleFont: { size: 10 }, bodyFont: { size: 10 } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+        y: {
+          min: 70, max: 100,
+          ticks: { font: { size: 9 }, callback: v => v + '%' },
+          grid: { color: '#f3f2f1' }
+        }
+      }
+    }
+  });
+
+  // ── DONUT CHART ──
+  const donutCtx = document.getElementById('donutChart').getContext('2d');
+  new Chart(donutCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['RAS','CAS','MBS','PCST','TSY'],
+      datasets: [{
+        data: [32.7, 27.6, 21.3, 11.7, 6.7],
+        backgroundColor: ['#0078d4','#107c10','#d83b01','#8764b8','#c8a96e'],
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { titleFont: { size: 10 }, bodyFont: { size: 10 } }
+      }
+    }
+  });
+</script>
+</body>
+</html>
