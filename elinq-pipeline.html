@@ -399,11 +399,11 @@
 <div class="header">
   <div class="header-eyebrow">Automation Project · HSBC Financial Support Dept</div>
   <h1>eLinq Utilization<br><span>Reporting Pipeline</span></h1>
-  <p class="header-desc">A self-initiated automation project that transformed fragmented, manually-collected log data into a daily-refreshing centralized utilization dashboard — giving leadership the visibility needed to improve system adoption across the department.</p>
+  <p class="header-desc">A self-initiated automation project that transformed fragmented, manually-collected log data into a daily-refreshing centralized utilization dashboard, giving leadership the data to improve system adoption across the department.</p>
 
   <div class="problem-box">
     <div class="problem-label">Problem</div>
-    <div class="problem-text">AVPs flagged declining call volumes but had zero data on eLinq adoption. Log files were siloed on individual agent machines with no collection mechanism. Reports were manual, inconsistent, and days late.</div>
+    <div class="problem-text">AVPs flagged declining call volumes but had no data on eLinq adoption. Log files sat on individual agent machines with no collection process. Reports were manual, inconsistent, and days late.</div>
   </div>
 </div>
 
@@ -419,7 +419,7 @@
         <span class="stage-icon">🖥️</span>
         <div class="stage-title">Agent Machines</div>
         <div class="stage-subtitle">eLinq log output</div>
-        <div class="stage-desc">Each agent's machine generates daily eLinq activity logs as a byproduct of normal tool usage. ~30–50 agents across the dept, each with a local log file.</div>
+        <div class="stage-desc">Each agent's machine generates daily eLinq activity logs as part of normal tool usage. 100+ agents across the department, each with a local log file.</div>
         <span class="stage-tag tag-source">Raw Logs</span>
       </div>
     </div>
@@ -439,7 +439,7 @@
         <span class="stage-icon">📜</span>
         <div class="stage-title">Batch Script</div>
         <div class="stage-subtitle">Windows .bat automation</div>
-        <div class="stage-desc">Custom batch script deployed to each agent machine. Runs on a daily schedule — copies the eLinq log file to a mapped network shared folder automatically.</div>
+        <div class="stage-desc">Agent machines were locked-down corporate endpoints with no access to third-party automation tools or admin-level software. Windows Task Scheduler was the only available automation mechanism. A batch script was deployed to each machine, scheduled to run 10 minutes before end of shift, copying the day's eLinq log file to a mapped shared network folder.</div>
         <span class="stage-tag tag-batch">.bat script</span>
       </div>
     </div>
@@ -459,7 +459,7 @@
         <span class="stage-icon">📁</span>
         <div class="stage-title">Network Shared Folder</div>
         <div class="stage-subtitle">Centralized log repository</div>
-        <div class="stage-desc">All agent logs land in a single shared network folder, accessible to the reporting pipeline. Acts as the centralized staging area — one folder, all agents, updated daily.</div>
+        <div class="stage-desc">All agent logs land in a single shared network folder, accessible to the reporting pipeline. Acts as the centralized staging area, one folder, all agents, updated daily.</div>
         <span class="stage-tag tag-manual">Network Drive</span>
       </div>
     </div>
@@ -478,7 +478,7 @@
         <div class="stage-number">04 / TRANSFORM</div>
         <span class="stage-icon">⚙️</span>
         <div class="stage-title">Power Query Pipeline</div>
-        <div class="stage-subtitle">ETL — clean & standardize</div>
+        <div class="stage-subtitle">ETL, clean & standardize</div>
         <div class="stage-desc">Power Query connects to the shared folder, ingests all logs, and applies transformation steps: parse raw text, standardize columns, remove noise, deduplicate, and format for reporting.</div>
         <span class="stage-tag tag-pq">Power Query</span>
       </div>
@@ -498,8 +498,8 @@
         <div class="stage-number">05 / VALIDATE</div>
         <span class="stage-icon">🔗</span>
         <div class="stage-title">SAS Data Match</div>
-        <div class="stage-subtitle">Cross-reference utilization</div>
-        <div class="stage-desc">Cleaned log data is matched against SAS-provided utilization baseline data to calculate actual vs expected usage rates per agent and team. Discrepancies flagged automatically.</div>
+        <div class="stage-subtitle">Cross-reference against baseline</div>
+        <div class="stage-desc">Cleaned log data is matched against SAS baseline data to calculate actual versus expected usage per agent and team. Discrepancies are flagged automatically.</div>
         <span class="stage-tag tag-sas">SAS Match</span>
       </div>
     </div>
@@ -519,7 +519,7 @@
         <span class="stage-icon">📊</span>
         <div class="stage-title">Weekly Leadership Report</div>
         <div class="stage-subtitle">Excel dashboard + findings</div>
-        <div class="stage-desc">Finalized utilization data presented weekly to AVPs and team leaders. Low-utilization agents flagged for coaching. Troubleshooting guide distributed for common log transmission errors.</div>
+        <div class="stage-desc">Finalized utilization data goes to AVPs and team leaders weekly. Low-utilization agents are flagged for coaching. A troubleshooting guide covers common log transmission errors.</div>
         <span class="stage-tag tag-pbi">Excel · Reporting</span>
       </div>
     </div>
@@ -534,7 +534,7 @@
       <div class="detail-card">
         <div class="detail-card-label">Batch Script Logic</div>
         <div class="detail-card-title">Automated Log Collection</div>
-        <div class="detail-card-body">Scheduled Windows batch script on each agent machine copies the daily eLinq log to the shared network path. Handles file naming (agent ID + date) to prevent overwrites and enable easy attribution.</div>
+        <div class="detail-card-body">Agent machines were restricted corporate endpoints with no access to third-party tools or elevated privileges. Windows Task Scheduler was the only viable automation option. The batch script runs 10 minutes before end of shift, when the day's eLinq activity is complete. It copies the log to the shared network path and handles file naming (agent ID + date) to prevent overwrites and keep attribution clean.</div>
         <div class="code-block">
           <span class="code-comment">:: Daily eLinq log push</span><br>
           <span class="code-cmd">@echo off</span><br>
@@ -589,7 +589,7 @@
       <div class="outcome-item">
         <div class="outcome-label">Visibility</div>
         <div class="outcome-val">Weekly Leadership Reports</div>
-        <div class="outcome-desc">AVPs and team leaders received weekly utilization breakdowns per agent and team — enabling targeted coaching of low-utilization staff.</div>
+        <div class="outcome-desc">AVPs and team leaders received weekly utilization breakdowns per agent and team, enabling targeted coaching of low-utilization staff.</div>
       </div>
       <div class="outcome-item">
         <div class="outcome-label">Adoption</div>
@@ -602,7 +602,7 @@
   <!-- FOOTER -->
   <div class="diagram-footer">
     <div class="footer-note">eLinq Utilization Pipeline · HSBC Financial Support · Built by Myles Chuatico · 2023–2024</div>
-    <div class="portfolio-note">⚠ PORTFOLIO SAMPLE — Org details sanitized</div>
+    <div class="portfolio-note">⚠ PORTFOLIO SAMPLE, Org details sanitized</div>
   </div>
 
 </div>

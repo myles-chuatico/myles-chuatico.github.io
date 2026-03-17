@@ -1,452 +1,1160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mortgage Decision Support Tool</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mortgage Decision Support Tool</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#e8edf4;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:28px 14px 60px;}
+.shell{width:100%;max-width:640px;}
 
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #f0f4f8;
-      min-height: 100vh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 40px 16px;
-    }
+/* header */
+.hdr{background:#1F4E79;color:#fff;border-radius:10px 10px 0 0;padding:18px 26px 14px;}
+.hdr-title{font-size:16.5px;font-weight:700;margin-bottom:2px;}
+.hdr-sub{font-size:10.5px;opacity:.55;line-height:1.5;}
 
-    .container {
-      background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-      width: 100%;
-      max-width: 640px;
-      overflow: hidden;
-    }
+/* phase nav */
+.pnav{display:flex;background:#163d61;border-bottom:2px solid #0e2b47;}
+.pn{flex:1;padding:8px 2px;text-align:center;font-size:8.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.3);cursor:default;border-right:1px solid rgba(255,255,255,.07);transition:all .2s;line-height:1.4;}
+.pn:last-child{border-right:none;}
+.pn.done{color:rgba(255,255,255,.5);}
+.pn.active{color:#fff;background:rgba(255,255,255,.1);}
+.pn-dot{display:block;width:6px;height:6px;border-radius:50%;background:currentColor;margin:0 auto 4px;opacity:.5;}
+.pn.done .pn-dot,.pn.active .pn-dot{opacity:1;}
 
-    .header {
-      background: #1F4E79;
-      color: #fff;
-      padding: 28px 32px 20px;
-    }
+/* progress */
+.prog-wrap{background:#fff;padding:10px 26px 0;}
+.prog-bg{background:#e0e8f0;border-radius:99px;height:4px;overflow:hidden;}
+.prog-bar{height:100%;border-radius:99px;transition:width .4s ease,background .3s;width:0%;}
+.prog-lbl{font-size:10px;color:#aaa;text-align:right;margin:4px 0 0;}
 
-    .header h1 {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      margin-bottom: 6px;
-    }
+/* body */
+.body{background:#fff;border-radius:0 0 10px 10px;padding:0;}
 
-    .header p {
-      font-size: 13px;
-      opacity: 0.82;
-      line-height: 1.5;
-    }
+/* phase screen */
+.phase-screen{display:none;}
+.phase-screen.active{display:block;}
 
-    .disclaimer {
-      background: #fff8e1;
-      border-left: 4px solid #f9a825;
-      padding: 12px 20px;
-      font-size: 13px;
-      color: #5d4037;
-      font-weight: 500;
-    }
+/* phase header */
+.ph{padding:16px 26px 14px;border-bottom:1px solid #edf0f5;}
+.ph-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;}
+.ph-title{font-size:15px;font-weight:700;color:#1a1a1a;line-height:1.3;}
+.ph-desc{font-size:12px;color:#7a8a96;margin-top:4px;line-height:1.6;}
 
-    .body {
-      padding: 28px 32px 32px;
-    }
+/* step */
+.step{padding:20px 26px 24px;display:none;animation:fi .2s ease;}
+.step.active{display:block;}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
-    .progress-bar-wrap {
-      background: #e8edf2;
-      border-radius: 99px;
-      height: 6px;
-      margin-bottom: 28px;
-      overflow: hidden;
-    }
+/* step label */
+.slabel{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px;}
+.sl-pre{color:#555;}
+.sl-routing{color:#1F4E79;}
+.sl-context{color:#b8935a;}
+.sl-ie{color:#4a3570;}
 
-    .progress-bar {
-      height: 100%;
-      background: #1F4E79;
-      border-radius: 99px;
-      transition: width 0.4s ease;
-      width: 0%;
-    }
+.stext{font-size:14.5px;font-weight:600;color:#1a1a1a;line-height:1.5;margin-bottom:16px;}
 
-    .question-block {
-      display: none;
-      animation: fadeIn 0.25s ease;
-    }
+/* info boxes */
+.ib{border-radius:7px;padding:10px 14px;font-size:12px;line-height:1.7;margin-bottom:14px;display:flex;gap:9px;align-items:flex-start;}
+.ib-i{flex-shrink:0;font-size:13px;margin-top:1px;}
+.ib.info  {background:#eef3f8;border:1px solid #b8d0e8;color:#1F4E79;}
+.ib.warn  {background:#fff8e1;border:1px solid #ffc107;color:#5d4037;}
+.ib.red   {background:#fdf0f0;border:1px solid #e8aaaa;color:#9b2335;}
+.ib.purple{background:#f2eefe;border:1px solid #c4b8e4;color:#4a3570;}
+.ib.green {background:#edf7f0;border:1px solid #a8d5b8;color:#1a5c33;}
+.ib ol,.ib ul{margin:4px 0 0 16px;}
+.ib li{margin-bottom:2px;}
 
-    .question-block.active {
-      display: block;
-    }
+/* conc note */
+.conc{display:flex;gap:7px;align-items:flex-start;background:#fffde7;border:1px solid #ffe082;border-radius:5px;padding:7px 12px;font-size:11px;color:#7a5c1e;margin-bottom:14px;line-height:1.6;}
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+/* options */
+.opts{display:flex;gap:8px;flex-wrap:wrap;}
+.opt{flex:1;min-width:120px;padding:11px 12px;border:2px solid #d0d8e4;border-radius:7px;background:#fff;font-size:13px;font-weight:600;color:#333;cursor:pointer;text-align:center;transition:all .14s;line-height:1.4;}
+.opt:hover       {border-color:#1F4E79;background:#eef3f8;color:#1F4E79;}
+.opt.sel         {border-color:#1F4E79;background:#1F4E79;color:#fff;}
+.opt.ctx:hover   {border-color:#b8935a;background:#fdf6e8;color:#7a5c1e;}
+.opt.ctx.sel     {border-color:#b8935a;background:#b8935a;color:#fff;}
+.opt.ie:hover    {border-color:#4a3570;background:#f2eefe;color:#4a3570;}
+.opt.ie.sel      {border-color:#4a3570;background:#4a3570;color:#fff;}
+.opt.danger:hover{border-color:#9b2335;background:#fdf0f0;color:#9b2335;}
+.opt.danger.sel  {border-color:#9b2335;background:#9b2335;color:#fff;}
 
-    .question-label {
-      font-size: 13px;
-      font-weight: 600;
-      color: #1F4E79;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
+/* checklist */
+.chk-list{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.chi{display:flex;align-items:center;gap:9px;padding:8px 12px;border:1.5px solid #d0d8e4;border-radius:6px;cursor:pointer;font-size:12.5px;color:#333;transition:all .14s;user-select:none;}
+.chi:hover{border-color:#1F4E79;background:#f5f8fc;}
+.chi.on{border-color:#1F4E79;background:#eef3f8;color:#1F4E79;}
+.chi.ie:hover{border-color:#4a3570;background:#f5f0fd;}
+.chi.ie.on{border-color:#4a3570;background:#f2eefe;color:#4a3570;}
+.chbox{width:15px;height:15px;border-radius:3px;border:2px solid #d0d8e4;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .14s;}
+.chi.on .chbox{border-color:#1F4E79;background:#1F4E79;color:#fff;}
+.chi.ie.on .chbox{border-color:#4a3570;background:#4a3570;color:#fff;}
+.chbtn{padding:10px 18px;border:none;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s;opacity:.4;pointer-events:none;}
+.chbtn.rdy{opacity:1;pointer-events:all;}
+.chbtn.blue{background:#1F4E79;color:#fff;}
+.chbtn.blue:hover{background:#163d61;}
+.chbtn.purple{background:#4a3570;color:#fff;}
+.chbtn.purple:hover{background:#3a2860;}
 
-    .question-text {
-      font-size: 16px;
-      font-weight: 600;
-      color: #1a1a1a;
-      line-height: 1.5;
-      margin-bottom: 20px;
-    }
+/* reason grid */
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px;}
+.rbtn{padding:9px 10px;border:1.5px solid #d0d8e4;border-radius:6px;background:#fff;font-size:12px;font-weight:500;color:#444;cursor:pointer;text-align:left;transition:all .14s;}
+.rbtn:hover{border-color:#b8935a;background:#fdf6e8;color:#7a5c1e;}
+.rbtn.sel{border-color:#b8935a;background:#b8935a;color:#fff;}
 
-    .warning-box {
-      background: #fff3cd;
-      border: 1px solid #ffc107;
-      border-radius: 8px;
-      padding: 12px 16px;
-      font-size: 13px;
-      color: #7d5a00;
-      font-weight: 500;
-      margin-bottom: 20px;
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-    }
+/* vuln tags */
+.vtags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.vtag{padding:5px 12px;border:1.5px solid #d0d8e4;border-radius:20px;font-size:11.5px;font-weight:500;color:#555;cursor:pointer;transition:all .14s;}
+.vtag:hover{border-color:#9b2335;background:#fdf0f0;color:#9b2335;}
+.vtag.sel{border-color:#9b2335;background:#fdf0f0;color:#9b2335;font-weight:700;}
+.vtag.vtnone:hover{border-color:#1a5c33;background:#edf7f0;color:#1a5c33;}
+.vtag.vtnone.sel{border-color:#1a5c33;background:#1a5c33;color:#fff;}
 
-    .warning-box::before {
-      content: "⚠️";
-      flex-shrink: 0;
-    }
+/* step footer */
+.sfooter{display:flex;align-items:center;justify-content:space-between;padding:12px 26px 14px;border-top:1px solid #edf0f5;background:#f9fafb;border-radius:0 0 10px 10px;}
+.back-btn{background:none;border:1px solid #d0d8e4;border-radius:6px;padding:6px 14px;font-size:11.5px;font-weight:600;color:#666;cursor:pointer;transition:all .15s;display:none;}
+.back-btn:hover{border-color:#1F4E79;color:#1F4E79;}
+.back-btn.vis{display:inline-block;}
+.step-counter{font-size:10px;color:#aaa;font-family:monospace;}
 
-    .options {
-      display: flex;
-      gap: 12px;
-      margin-top: 4px;
-    }
+/* phase transition */
+.phase-transition{padding:20px 26px 24px;text-align:center;}
+.pt-icon{font-size:32px;margin-bottom:10px;}
+.pt-title{font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px;}
+.pt-desc{font-size:12.5px;color:#7a8a96;line-height:1.6;margin-bottom:18px;max-width:400px;margin-left:auto;margin-right:auto;}
+.pt-btn{background:#1F4E79;color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:13.5px;font-weight:600;cursor:pointer;transition:background .15s;}
+.pt-btn:hover{background:#163d61;}
 
-    .option-btn {
-      flex: 1;
-      padding: 14px;
-      border: 2px solid #d0d8e4;
-      border-radius: 8px;
-      background: #fff;
-      font-size: 15px;
-      font-weight: 600;
-      color: #333;
-      cursor: pointer;
-      transition: all 0.18s ease;
-      text-align: center;
-    }
+/* result screen */
+.result-screen{padding:22px 26px 28px;}
+.rs-hdr{display:flex;align-items:flex-start;gap:13px;margin-bottom:12px;}
+.rs-ico{width:46px;height:46px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.rs-label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;}
+.rs-text{font-size:15.5px;font-weight:700;color:#1a1a1a;line-height:1.4;}
+.rs-plan{display:inline-block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:3px;margin-bottom:12px;}
+.rs-ctx{background:#f5f7fa;border-radius:6px;padding:10px 14px;font-size:11.5px;color:#555;line-height:1.7;margin-bottom:10px;}
+.rs-ctx-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#1F4E79;margin-bottom:5px;}
+.rs-notes{border-radius:6px;padding:12px 14px;font-size:12px;color:#444;line-height:1.75;margin-bottom:10px;}
+.rs-notes b{color:#1F4E79;}
+.rs-notes.ie-n b{color:#4a3570;}
+.rs-warn{background:#fff8e1;border:1px solid #ffc107;border-radius:5px;padding:8px 12px;font-size:11.5px;color:#7d5a00;margin-bottom:10px;line-height:1.6;}
+.rs-vuln{background:#fdf0f0;border:1px solid #e8aaaa;border-radius:5px;padding:8px 12px;font-size:11.5px;color:#9b2335;margin-bottom:10px;line-height:1.6;}
+.rs-doc{background:#fffde7;border:1px solid #ffe082;border-radius:5px;padding:8px 12px;font-size:11px;color:#7a5c1e;margin-bottom:12px;line-height:1.6;}
+.restart{background:#1F4E79;color:#fff;border:none;border-radius:7px;padding:10px 22px;font-size:12.5px;font-weight:600;cursor:pointer;transition:background .15s;}
+.restart:hover{background:#163d61;}
 
-    .option-btn:hover {
-      border-color: #1F4E79;
-      background: #eef3f8;
-      color: #1F4E79;
-    }
-
-    .option-btn.selected {
-      border-color: #1F4E79;
-      background: #1F4E79;
-      color: #fff;
-    }
-
-    .result-block {
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .result-block.active {
-      display: block;
-    }
-
-    .result-icon {
-      font-size: 36px;
-      margin-bottom: 12px;
-    }
-
-    .result-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: #1F4E79;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 8px;
-    }
-
-    .result-text {
-      font-size: 18px;
-      font-weight: 700;
-      color: #1a1a1a;
-      line-height: 1.5;
-      margin-bottom: 24px;
-    }
-
-    .result-notes {
-      background: #f0f4f8;
-      border-radius: 8px;
-      padding: 16px;
-      font-size: 13px;
-      color: #444;
-      line-height: 1.7;
-      margin-bottom: 24px;
-    }
-
-    .result-notes strong {
-      color: #1F4E79;
-    }
-
-    .restart-btn {
-      background: #1F4E79;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 13px 28px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.18s;
-    }
-
-    .restart-btn:hover {
-      background: #163d61;
-    }
-
-    .breadcrumb {
-      font-size: 12px;
-      color: #888;
-      margin-bottom: 20px;
-      min-height: 16px;
-    }
-
-    .breadcrumb span {
-      color: #1F4E79;
-      font-weight: 600;
-    }
-  </style>
+/* themes */
+.t-stop   .rs-ico{background:#faebed;} .t-stop   .rs-label{color:#9b2335;} .t-stop   .rs-plan{background:#faebed;color:#9b2335;} .t-stop   .rs-notes{background:#fdf0f2;}
+.t-xfer   .rs-ico{background:#e8f4f7;} .t-xfer   .rs-label{color:#1a5c6b;} .t-xfer   .rs-plan{background:#e8f4f7;color:#1a5c6b;} .t-xfer   .rs-notes{background:#edf5f8;}
+.t-mtg    .rs-ico{background:#fff8e8;} .t-mtg    .rs-label{color:#7a5c1e;} .t-mtg    .rs-plan{background:#fff8e8;color:#7a5c1e;} .t-mtg    .rs-notes{background:#fdf6e8;}
+.t-full   .rs-ico{background:#e8f5ee;} .t-full   .rs-label{color:#1a5c33;} .t-full   .rs-plan{background:#e8f5ee;color:#1a5c33;} .t-full   .rs-notes{background:#edf8f2;}
+.t-reage  .rs-ico{background:#e8f0fd;} .t-reage  .rs-label{color:#1a3a7a;} .t-reage  .rs-plan{background:#e8f0fd;color:#1a3a7a;} .t-reage  .rs-notes{background:#edf2fe;}
+.t-cap    .rs-ico{background:#e8eaf8;} .t-cap    .rs-label{color:#2a2a7a;} .t-cap    .rs-plan{background:#e8eaf8;color:#2a2a7a;} .t-cap    .rs-notes{background:#eeeffe;}
+.t-red    .rs-ico{background:#fff8e8;} .t-red    .rs-label{color:#7a5c1e;} .t-red    .rs-plan{background:#fff8e8;color:#7a5c1e;} .t-red    .rs-notes{background:#fdf6e8;}
+.t-token  .rs-ico{background:#fef0e6;} .t-token  .rs-label{color:#8a4a10;} .t-token  .rs-plan{background:#fef0e6;color:#8a4a10;} .t-token  .rs-notes{background:#fef3ec;}
+.t-break  .rs-ico{background:#e8f4f7;} .t-break  .rs-label{color:#1a5c6b;} .t-break  .rs-plan{background:#e8f4f7;color:#1a5c6b;} .t-break  .rs-notes{background:#edf5f8;}
+.t-bs     .rs-ico{background:#f2eefe;} .t-bs     .rs-label{color:#4a3570;} .t-bs     .rs-plan{background:#f2eefe;color:#4a3570;} .t-bs     .rs-notes{background:#f5f0fe;}
+.t-ltna   .rs-ico{background:#faebed;} .t-ltna   .rs-label{color:#9b2335;} .t-ltna   .rs-plan{background:#faebed;color:#9b2335;} .t-ltna   .rs-notes{background:#fdf0f2;}
+</style>
 </head>
 <body>
-<div class="container">
-  <div class="header">
-    <h1>Mortgage Decision Support Tool</h1>
-    <p>A branching logic tool to guide agents to the correct resolution pathway based on account status.</p>
+<div class="shell">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-title">Mortgage Decision Support Tool</div>
+    <div class="hdr-sub">UK / FCA · Collections · Unsecured + Conventional Mortgage</div>
   </div>
-  <div class="disclaimer">
-    ⚠️ Please ensure the customer is fully verified before proceeding.
+
+  <!-- PHASE NAV -->
+  <div class="pnav">
+    <div class="pn active" id="pn1"><span class="pn-dot"></span>Pre-call</div>
+    <div class="pn" id="pn2"><span class="pn-dot"></span>Routing</div>
+    <div class="pn" id="pn3"><span class="pn-dot"></span>Context</div>
+    <div class="pn" id="pn4"><span class="pn-dot"></span>I&amp;E</div>
+    <div class="pn" id="pn5"><span class="pn-dot"></span>Outcome</div>
   </div>
+
+  <!-- PROGRESS -->
+  <div class="prog-wrap">
+    <div class="prog-bg"><div class="prog-bar" id="progBar"></div></div>
+    <div class="prog-lbl" id="progLbl"></div>
+  </div>
+
   <div class="body">
-    <div class="progress-bar-wrap">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-    <div class="breadcrumb" id="breadcrumb"></div>
 
-    <!-- Q1 -->
-    <div class="question-block active" id="q1">
-      <div class="question-label">Question 1 of 4</div>
-      <div class="question-text">Is the mortgage account up to date?</div>
-      <div class="options">
-        <button class="option-btn" onclick="answer('q1','yes')">Yes</button>
-        <button class="option-btn" onclick="answer('q1','no')">No</button>
+    <!-- ════════════════════════════
+         PHASE 1 – PRE-CALL
+         ════════════════════════════ -->
+    <div class="phase-screen active" id="phase1">
+      <div class="ph">
+        <div class="ph-label" style="color:#555;">Phase 1</div>
+        <div class="ph-title">Pre-call Checks</div>
+        <div class="ph-desc">Establish who is on the line, verify identity, then check account flags.</div>
+      </div>
+
+      <!-- 1.1 Call type -->
+      <div class="step active" id="s1_1">
+        <div class="slabel sl-pre">1.1 – Call Type</div>
+        <div class="stext">Is this an inbound or outbound call?</div>
+        <div class="opts">
+          <button class="opt" onclick="next('s1_1','inbound','s1_2')">Inbound</button>
+          <button class="opt" onclick="next('s1_1','outbound','s1_2')">Outbound</button>
+        </div>
+      </div>
+
+      <!-- 1.2 Who is on the line -->
+      <div class="step" id="s1_2">
+        <div class="slabel sl-pre">1.2 – Who Is on the Line?</div>
+        <div class="stext">Who are you speaking with?</div>
+        <div class="opts" style="flex-wrap:wrap;">
+          <button class="opt" onclick="next('s1_2','customer','s1_3')" style="min-width:150px;">Customer directly</button>
+          <button class="opt ctx" onclick="s1_2_thirdparty()" style="min-width:150px;">Third party<br><small style="font-weight:400;font-size:11px;">picked up / calling on behalf</small></button>
+        </div>
+      </div>
+
+      <!-- 1.2a Third party – inbound (calling on behalf) vs outbound (picked up) -->
+      <div class="step" id="s1_2a">
+        <!-- content set dynamically based on call type -->
+      </div>
+
+      <!-- 1.2b Outbound: customer available? -->
+      <div class="step" id="s1_2b_avail">
+        <div class="ib warn"><span class="ib-i">⚠️</span><div>Do not disclose any account details or the reason for the call to the third party.</div></div>
+        <div class="slabel sl-pre">1.2b – Customer Available?</div>
+        <div class="stext">Is the customer available to come on the line?</div>
+        <div class="opts">
+          <button class="opt" onclick="next('s1_2b_avail','yes','s1_3')">Yes – customer coming on</button>
+          <button class="opt danger" onclick="result('tp_no_customer')">No – not available</button>
+        </div>
+      </div>
+
+      <!-- 1.2c Inbound: LOA/PoA/mandate on file? -->
+      <div class="step" id="s1_2c_loa">
+        <div class="ib info"><span class="ib-i">📋</span><div>Check system for LOA, PoA, or third party mandate on file before proceeding.</div></div>
+        <div class="slabel sl-pre">1.2c – Authority on File?</div>
+        <div class="stext">Is there a valid LOA, PoA, or third party mandate on file for this caller?</div>
+        <div class="opts">
+          <button class="opt" onclick="next('s1_2c_loa','yes','s1_3_tp')">Yes – authority on file</button>
+          <button class="opt danger" onclick="result('tp_no_authority')">No – no authority on file</button>
+        </div>
+      </div>
+
+      <!-- 1.3 Verification – customer (outbound: name+DOB+postcode; inbound: DOB+postcode+security) -->
+      <div class="step" id="s1_3">
+        <div class="ib info" id="s1_3_ib"><span class="ib-i">🔐</span><div id="s1_3_ib_text">Loading...</div></div>
+        <div class="slabel sl-pre">1.3 – Customer Verification</div>
+        <div class="stext" id="s1_3_text">Loading...</div>
+        <div class="opts" style="flex-wrap:wrap;" id="s1_3_opts">
+          <!-- populated by JS based on call type -->
+        </div>
+      </div>
+
+      <!-- 1.3 Inbound: DOB + Postcode -->
+      <div class="step" id="s1_3_dob_post">
+        <div class="ib red"><span class="ib-i">🚫</span><div><b>Hard stop criteria:</b> DOB and postcode are non-negotiable. Any mismatch = end call immediately, no explanation.</div></div>
+        <div class="slabel sl-pre">1.3a – DOB &amp; Postcode</div>
+        <div class="stext">Does the customer correctly confirm both date of birth AND postcode?</div>
+        <div class="opts">
+          <button class="opt" onclick="next('s1_3_dob_post','pass','s1_3_sec')">Yes – both correct</button>
+          <button class="opt danger" onclick="result('verify_fail_hard')">No – either incorrect</button>
+        </div>
+      </div>
+
+      <!-- 1.3 Inbound: Security code or questions -->
+      <div class="step" id="s1_3_sec">
+        <div class="slabel sl-pre">1.3b – Security</div>
+        <div class="stext">Does the customer have a security code on their account?</div>
+        <div class="opts">
+          <button class="opt" onclick="next('s1_3_sec','yes','s1_3_sec_code')">Yes – has security code</button>
+          <button class="opt" onclick="next('s1_3_sec','no','s1_3_sec_q')">No – use security questions</button>
+        </div>
+      </div>
+
+      <!-- 1.3 Security code -->
+      <div class="step" id="s1_3_sec_code">
+        <div class="slabel sl-pre">1.3b – Security Code</div>
+        <div class="stext">Does the customer correctly provide their security code?</div>
+        <div class="opts">
+          <button class="opt" onclick="next('s1_3_sec_code','pass','s1_4')">Yes – correct</button>
+          <button class="opt danger" onclick="result('verify_fail_hard')">No – incorrect</button>
+        </div>
+      </div>
+
+      <!-- 1.3 Security questions (3 attempts, no hints) -->
+      <div class="step" id="s1_3_sec_q">
+        <div class="ib warn"><span class="ib-i">⚠️</span><div>3 attempts maximum. <b>Do not indicate if answers are correct or incorrect</b> – proceed to the next question regardless. Only confirm pass or fail after all attempts are exhausted.</div></div>
+        <div class="slabel sl-pre">1.3c – Security Questions</div>
+        <div class="stext">Has the customer passed the security questions within 3 attempts?</div>
+        <div class="opts">
+          <button class="opt" onclick="next('s1_3_sec_q','pass','s1_4')">Yes – passed</button>
+          <button class="opt danger" onclick="result('verify_fail_hard')">No – failed all 3 attempts</button>
+        </div>
+      </div>
+
+      <!-- 1.3 Third party verification (inbound, authority confirmed) -->
+      <div class="step" id="s1_3_tp">
+        <div class="ib info"><span class="ib-i">🔐</span><div>Verify using the third party's own details on file <b>plus</b> account verification details of the customer (DOB, postcode minimum).</div></div>
+        <div class="slabel sl-pre">1.3 – Third Party Verification</div>
+        <div class="stext">Has the third party been verified using their own details and the customer's account verification details?</div>
+        <div class="opts">
+          <button class="opt" onclick="next('s1_3_tp','pass','s1_4')">Yes – verified</button>
+          <button class="opt danger" onclick="result('verify_fail_hard')">No – failed verification</button>
+        </div>
+      </div>
+
+      <!-- 1.4 Account flags -->
+      <div class="step" id="s1_4">
+        <div class="ib info"><span class="ib-i">🔍</span><div>Check account flags on system now that the customer is verified.</div></div>
+        <div class="slabel sl-pre">1.4 – Account Flags</div>
+        <div class="stext">Does the account have a DMC tag?</div>
+        <div class="opts">
+          <button class="opt ctx" onclick="result('dmc_tag')">Yes – DMC tag present</button>
+          <button class="opt" onclick="next('s1_4','no','s1_4b')">No – continue</button>
+        </div>
+      </div>
+
+      <!-- 1.4b Litigation -->
+      <div class="step" id="s1_4b">
+        <div class="slabel sl-pre">1.4b – Litigation / Legal Hold</div>
+        <div class="stext">Is the account in litigation or under a legal hold?</div>
+        <div class="opts">
+          <button class="opt danger" onclick="result('litigation')">Yes – litigation active</button>
+          <button class="opt" onclick="next('s1_4b','no','s1_4c')">No – continue</button>
+        </div>
+      </div>
+
+      <!-- 1.4c BS (inbound only) -->
+      <div class="step" id="s1_4c">
+        <div class="slabel sl-pre" id="s1_4c_label">1.4c – Breathing Space</div>
+        <div class="stext" id="s1_4c_text">Loading...</div>
+        <div class="opts" id="s1_4c_opts"><!-- populated by JS --></div>
+      </div>
+
+      <!-- 1.5 Vulnerability -->
+      <div class="step" id="s1_5">
+        <div class="ib warn"><span class="ib-i">🛡️</span><div>Note indicators, adjust communication approach, flag on system, and continue. You are trained to handle vulnerable customers.</div></div>
+        <div class="slabel sl-pre">1.5 – Vulnerability Indicators</div>
+        <div class="stext">Select any vulnerability indicators present:</div>
+        <div class="vtags" id="vulnTags">
+          <div class="vtag" onclick="toggleVuln(this)" data-v="mental_health">Mental health</div>
+          <div class="vtag" onclick="toggleVuln(this)" data-v="illness">Serious illness</div>
+          <div class="vtag" onclick="toggleVuln(this)" data-v="bereavement">Bereavement</div>
+          <div class="vtag" onclick="toggleVuln(this)" data-v="domestic">Domestic situation</div>
+          <div class="vtag" onclick="toggleVuln(this)" data-v="cognitive">Cognitive / comprehension</div>
+          <div class="vtag" onclick="toggleVuln(this)" data-v="stress">Severe financial stress</div>
+          <div class="vtag vtnone" onclick="toggleVuln(this)" data-v="none">No indicators</div>
+        </div>
+        <button class="chbtn blue" id="vulnBtn" onclick="confirmVuln()">Confirm and continue</button>
+      </div>
+
+      <!-- 1.6 Arrangement history -->
+      <div class="step" id="s1_6">
+        <div class="ib info"><span class="ib-i">📋</span><div>Check arrangement history on system before proceeding.</div></div>
+        <div class="slabel sl-pre">1.6 – Arrangement History</div>
+        <div class="stext">What does the account's arrangement history show?</div>
+        <div class="opts" style="flex-wrap:wrap;">
+          <button class="opt" onclick="next('s1_6','none','p1_done')" style="min-width:130px;">No previous<br>arrangements</button>
+          <button class="opt ctx" onclick="next('s1_6','active','s1_6b')" style="min-width:130px;">Active<br>arrangement</button>
+          <button class="opt ctx" onclick="next('s1_6','broken_1','p1_done')" style="min-width:130px;">1 broken<br>arrangement</button>
+          <button class="opt danger" onclick="result('multi_broken')" style="min-width:130px;">2+ broken<br>arrangements</button>
+        </div>
+      </div>
+
+      <!-- 1.6b active arrangement -->
+      <div class="step" id="s1_6b">
+        <div class="ib warn"><span class="ib-i">⚠️</span><div>An active arrangement is in place. Establish the reason for this call before proceeding.</div></div>
+        <div class="slabel sl-pre">1.6b – Active Arrangement</div>
+        <div class="stext">Why is the customer calling with an active arrangement in place?</div>
+        <div class="opts" style="flex-wrap:wrap;">
+          <button class="opt ctx" onclick="next('s1_6b','cant_maintain','p1_done')" style="min-width:140px;">Cannot maintain<br>arrangement</button>
+          <button class="opt" onclick="next('s1_6b','query','p1_done')" style="min-width:140px;">General query /<br>different issue</button>
+          <button class="opt" onclick="next('s1_6b','increase','p1_done')" style="min-width:140px;">Wants to<br>increase payments</button>
+        </div>
+      </div>
+
+      <!-- P1 done -->
+      <div class="step" id="p1_done">
+        <div class="phase-transition">
+          <div class="pt-icon">✅</div>
+          <div class="pt-title">Pre-call checks complete</div>
+          <div class="pt-desc">Customer verified, flags checked. Proceed to account routing.</div>
+          <button class="pt-btn" onclick="goPhase(2)">Continue to Routing →</button>
+        </div>
       </div>
     </div>
 
-    <!-- Q2 (if Q1=yes) -->
-    <div class="question-block" id="q2a">
-      <div class="question-label">Question 2 of 4</div>
-      <div class="question-text">Is the customer calling to explore options on their Mortgage Agreement?</div>
-      <div class="options">
-        <button class="option-btn" onclick="answer('q2a','yes')">Yes</button>
-        <button class="option-btn" onclick="answer('q2a','no')">No</button>
+    <div class="phase-screen" id="phase2">
+      <div class="ph">
+        <div class="ph-label" style="color:#1F4E79;">Phase 2</div>
+        <div class="ph-title">Account Routing</div>
+        <div class="ph-desc">Determine arrears status, handle GA marker, confirm account type.</div>
+      </div>
+
+      <!-- 2.1 Arrears -->
+      <div class="step active" id="s2_1">
+        <div class="slabel sl-routing">2.1 – Account Status</div>
+        <div class="stext">Is the mortgage account currently in arrears?</div>
+        <div class="opts">
+          <button class="opt" onclick="next('s2_1','no','s2_1b')">No – up to date</button>
+          <button class="opt danger" onclick="next('s2_1','yes','s2_2')">Yes – in arrears</button>
+        </div>
+      </div>
+
+      <!-- 2.1b up to date – reason -->
+      <div class="step" id="s2_1b">
+        <div class="slabel sl-routing">2.1b – Reason for Call</div>
+        <div class="stext">What is the reason for the call?</div>
+        <div class="opts" style="flex-wrap:wrap;">
+          <button class="opt" onclick="next('s2_1b','options','s2_1c')" style="min-width:150px;">Exploring Mortgage<br>Agreement options</button>
+          <button class="opt ctx" onclick="next('s2_1b','difficulty','p2_done')" style="min-width:150px;">Broader financial<br>difficulty present</button>
+          <button class="opt danger" onclick="result('wrong_team')" style="min-width:150px;">Unrelated /<br>wrong team</button>
+        </div>
+      </div>
+
+      <!-- 2.1c broader difficulty present -->
+      <div class="step" id="s2_1c">
+        <div class="slabel sl-routing">2.1c – Broader Difficulty</div>
+        <div class="stext">Alongside exploring the Mortgage Agreement options, is there any broader financial difficulty present?</div>
+        <div class="opts">
+          <button class="opt ctx" onclick="next('s2_1c','yes','p2_done')">Yes – difficulty present</button>
+          <button class="opt" onclick="result('mortgage_solutions')">No – Agreement options only</button>
+        </div>
+      </div>
+
+      <!-- 2.2 GA marker -->
+      <div class="step" id="s2_2">
+        <div class="ib info"><span class="ib-i">📬</span><div>A <b>Gone Away (GA) marker</b> means letters sent to the account address have been returned undelivered.</div></div>
+        <div class="slabel sl-routing">2.2 – Gone Away (GA) Marker</div>
+        <div class="stext">Does the account have a GA marker?</div>
+        <div class="opts">
+          <button class="opt ctx" onclick="next('s2_2','yes','s2_2b')">Yes – GA marker present</button>
+          <button class="opt" onclick="next('s2_2','no','s2_3')">No – continue</button>
+        </div>
+      </div>
+
+      <!-- 2.2b GA action -->
+      <div class="step" id="s2_2b">
+        <div class="conc">📋 <span>Document address and demographics update on system (CONC 7.14).</span></div>
+        <div class="ib warn col"><span class="ib-i">⚠️</span><div><b>Required before continuing:</b><ol><li>Confirm customer's current address</li><li>Update correspondence address in system</li><li>Update customer demographics</li></ol></div></div>
+        <div class="slabel sl-routing">2.2b – Update Address &amp; Demographics</div>
+        <div class="stext">Confirm all three actions have been completed:</div>
+        <div class="chk-list" id="gaChk">
+          <div class="chi" onclick="chkToggle(this,'gaChk','gaBtn')"><div class="chbox">✓</div>Address confirmed with customer</div>
+          <div class="chi" onclick="chkToggle(this,'gaChk','gaBtn')"><div class="chbox">✓</div>Correspondence address updated in system</div>
+          <div class="chi" onclick="chkToggle(this,'gaChk','gaBtn')"><div class="chbox">✓</div>Customer demographics updated</div>
+        </div>
+        <button class="chbtn blue rdy" id="gaBtn" onclick="chkNext('gaChk','gaBtn','s2_3')">Confirmed – continue</button>
+      </div>
+
+      <!-- 2.3 Joint -->
+      <div class="step" id="s2_3">
+        <div class="slabel sl-routing">2.3 – Account Type</div>
+        <div class="stext">Is this a joint account?</div>
+        <div class="opts">
+          <button class="opt" onclick="next('s2_3','sole','p2_done')">No – sole account</button>
+          <button class="opt" onclick="next('s2_3','joint','s2_3b')">Yes – joint account</button>
+        </div>
+      </div>
+
+      <!-- 2.3b separation -->
+      <div class="step" id="s2_3b">
+        <div class="ib warn"><span class="ib-i">⚠️</span><div>If separated: conduct <b>independent I&E</b> for each holder. If together: conduct <b>combined I&E</b>, both holders ideally present.</div></div>
+        <div class="slabel sl-routing">2.3b – Separation Status</div>
+        <div class="stext">Are the joint account holders separated or going through separation?</div>
+        <div class="opts">
+          <button class="opt ctx" onclick="next('s2_3b','separated','p2_done')">Yes – separated / separating</button>
+          <button class="opt" onclick="next('s2_3b','together','p2_done')">No – together</button>
+        </div>
+      </div>
+
+      <!-- P2 → P3 transition -->
+      <div class="step" id="p2_done">
+        <div class="phase-transition">
+          <div class="pt-icon">📍</div>
+          <div class="pt-title">Routing complete</div>
+          <div class="pt-desc">Account status and type confirmed. Proceed to situation assessment.</div>
+          <button class="pt-btn" onclick="goPhase(3)">Continue to Context →</button>
+        </div>
       </div>
     </div>
 
-    <!-- Q3 (if Q1=yes, Q2=yes) -->
-    <div class="question-block" id="q3a">
-      <div class="question-label">Question 3 of 4</div>
-      <div class="question-text">Are there other reasons why the customer is struggling to pay the mortgage going forward?</div>
-      <div class="options">
-        <button class="option-btn" onclick="answer('q3a','yes')">Yes</button>
-        <button class="option-btn" onclick="answer('q3a','no')">No</button>
+    <!-- ════════════════════════════
+         PHASE 3 – CONTEXT
+         ════════════════════════════ -->
+    <div class="phase-screen" id="phase3">
+      <div class="ph">
+        <div class="ph-label" style="color:#b8935a;">Phase 3</div>
+        <div class="ph-title">Situation Context</div>
+        <div class="ph-desc">Understand the customer's situation before I&E. Assess income eligibility.</div>
+      </div>
+
+      <!-- 3.1 Hardship reason -->
+      <div class="step active" id="s3_1">
+        <div class="conc">📋 <span>Document hardship reason on system (CONC 7.14).</span></div>
+        <div class="slabel sl-context">3.1 – Hardship Reason</div>
+        <div class="stext">What is the primary reason for the customer's financial difficulty?</div>
+        <div class="rgrid">
+          <button class="rbtn" onclick="selReason(this,'redundancy')">🏚️ Redundancy / job loss</button>
+          <button class="rbtn" onclick="selReason(this,'reduced_income')">📉 Reduced income</button>
+          <button class="rbtn" onclick="selReason(this,'illness')">🏥 Illness / medical</button>
+          <button class="rbtn" onclick="selReason(this,'relationship')">💔 Relationship breakdown</button>
+          <button class="rbtn" onclick="selReason(this,'bereavement')">🕊️ Bereavement</button>
+          <button class="rbtn" onclick="selReason(this,'overspending')">💳 Overspending / budgeting</button>
+          <button class="rbtn" onclick="selReason(this,'circumstances')">🔄 Change in circumstances</button>
+          <button class="rbtn" onclick="selReason(this,'other')">📝 Other</button>
+        </div>
+        <button class="chbtn blue" id="reasonBtn" onclick="confirmReason()">Confirm reason and continue</button>
+      </div>
+
+      <!-- 3.2 Explore situation -->
+      <div class="step" id="s3_2">
+        <div class="conc">📋 <span>Document situation assessment on system (CONC 7.14).</span></div>
+        <div class="slabel sl-context">3.2 – Situation Assessment</div>
+        <div class="stext">Explore and confirm the full situation with the customer:</div>
+        <div class="chk-list" id="exploreChk">
+          <div class="chi" onclick="chkToggle(this,'exploreChk','exploreBtn')"><div class="chbox">✓</div>Timeline confirmed – when did difficulty start?</div>
+          <div class="chi" onclick="chkToggle(this,'exploreChk','exploreBtn')"><div class="chbox">✓</div>Temporary or permanent – expected duration established</div>
+          <div class="chi" onclick="chkToggle(this,'exploreChk','exploreBtn')"><div class="chbox">✓</div>Other debts / creditors identified</div>
+          <div class="chi" onclick="chkToggle(this,'exploreChk','exploreBtn')"><div class="chbox">✓</div>Dependants / household composition noted</div>
+        </div>
+        <button class="chbtn blue" id="exploreBtn" onclick="chkNext('exploreChk','exploreBtn','s3_3')">Confirmed – continue</button>
+      </div>
+
+      <!-- 3.3 BS referral check -->
+      <div class="step" id="s3_3">
+        <div class="ib purple"><span class="ib-i">🤝</span><div>If the customer is overwhelmed by multiple creditors and unable to engage with collections, consider referring to StepChange / SCDC. Referral applies standard Breathing Space – pauses collections and ends arrangement discussion.</div></div>
+        <div class="slabel sl-context">3.3 – Breathing Space Referral Check</div>
+        <div class="stext">Is the customer overwhelmed with multiple creditors or unable to engage with collections?</div>
+        <div class="opts">
+          <button class="opt danger" onclick="result('bs_referral')">Yes – refer to StepChange / SCDC</button>
+          <button class="opt" onclick="next('s3_3','no','s3_4')">No – continue to income check</button>
+        </div>
+      </div>
+
+      <!-- 3.4 Income check -->
+      <div class="step" id="s3_4">
+        <div class="ib purple"><span class="ib-i">💡</span><div>Assess whether I&E is appropriate. If no income, a full I&E may not be meaningful – but cross-check transactions. Customers sometimes understate income.</div></div>
+        <div class="slabel sl-context">3.4 – Income Assessment</div>
+        <div class="stext">Does the customer have any income?</div>
+        <div class="opts" style="flex-wrap:wrap;">
+          <button class="opt ie" onclick="next('s3_4','yes','p3_done')" style="min-width:130px;">Yes – income present</button>
+          <button class="opt ie" onclick="next('s3_4','unclear','s3_4b')" style="min-width:130px;">Unclear – verify</button>
+          <button class="opt danger" onclick="next('s3_4','no','s3_4d')" style="min-width:130px;">No – states no income</button>
+        </div>
+      </div>
+
+      <!-- 3.4b verify transactions -->
+      <div class="step" id="s3_4b">
+        <div class="ib purple"><span class="ib-i">🔎</span><div>Cross-check transaction history for regular credits, salary patterns, benefit payments, or other recurring income.</div></div>
+        <div class="slabel sl-context">3.4b – Transaction Verification</div>
+        <div class="stext">After reviewing transaction history, what is your assessment?</div>
+        <div class="opts" style="flex-wrap:wrap;">
+          <button class="opt ie" onclick="next('s3_4b','confirmed','p3_done')" style="min-width:140px;">Income confirmed -<br>proceed to I&amp;E</button>
+          <button class="opt ie" onclick="next('s3_4b','no_income','s3_4d')" style="min-width:140px;">No income found</button>
+          <button class="opt ctx" onclick="next('s3_4b','discrepancy','s3_4c')" style="min-width:140px;">Discrepancy -<br>challenge customer</button>
+        </div>
+      </div>
+
+      <!-- 3.4c discrepancy -->
+      <div class="step" id="s3_4c">
+        <div class="ib warn"><span class="ib-i">⚠️</span><div>Transactions suggest undeclared income. Raise professionally – explain you need the full picture to find the best solution for them.</div></div>
+        <div class="slabel sl-context">3.4c – Income Discrepancy</div>
+        <div class="stext">After challenging the discrepancy, what is the outcome?</div>
+        <div class="opts">
+          <button class="opt ie" onclick="next('s3_4c','resolved','p3_done')">Resolved – income confirmed</button>
+          <button class="opt danger" onclick="result('income_refused')">Refused / cannot explain</button>
+        </div>
+      </div>
+
+      <!-- 3.4d no income – failed arr count -->
+      <div class="step" id="s3_4d">
+        <div class="ib red"><span class="ib-i">🚨</span><div><b>No income confirmed.</b> I&E not appropriate. Two failed arrangements = <b>auto-flag LTNA</b>. Do not attempt further workout without specialist clearance.</div></div>
+        <div class="slabel sl-context">3.4d – Failed Arrangements</div>
+        <div class="stext">How many failed arrangements does this account have?</div>
+        <div class="opts">
+          <button class="opt danger" onclick="result('ltna_no_income')">0 or 1 – refer to LTNA specialist</button>
+          <button class="opt danger" onclick="result('ltna_auto_flag')">2+ – auto-flag LTNA</button>
+        </div>
+      </div>
+
+      <!-- P3 → P4 transition -->
+      <div class="step" id="p3_done">
+        <div class="phase-transition">
+          <div class="pt-icon">📋</div>
+          <div class="pt-title">Context assessment complete</div>
+          <div class="pt-desc">Situation assessed and income confirmed. Proceed to full I&E.</div>
+          <button class="pt-btn" style="background:#4a3570;" onclick="goPhase(4)">Continue to I&amp;E →</button>
+        </div>
       </div>
     </div>
 
-    <!-- Q2b (if Q1=no) — GA Marker check -->
-    <div class="question-block" id="q2b">
-      <div class="question-label">Question 2 of 4</div>
-      <div class="question-text">Does the mortgage account have a General Arrears (GA) marker?</div>
-      <div class="options">
-        <button class="option-btn" onclick="answer('q2b','yes')">Yes</button>
-        <button class="option-btn" onclick="answer('q2b','no')">No</button>
+    <!-- ════════════════════════════
+         PHASE 4 – I&E
+         ════════════════════════════ -->
+    <div class="phase-screen" id="phase4">
+      <div class="ph">
+        <div class="ph-label" style="color:#4a3570;">Phase 4</div>
+        <div class="ph-title">I&amp;E Assessment</div>
+        <div class="ph-desc">Conduct the full I&E on system. Cross-check all figures against transaction history.</div>
+      </div>
+
+      <!-- 4.1 Conduct I&E -->
+      <div class="step active" id="s4_1">
+        <div class="conc">📋 <span>Document full I&E on system – mandatory (CONC 7.14).</span></div>
+        <div class="slabel sl-ie">4.1 – Conduct Full I&amp;E</div>
+        <div class="stext">Complete the full I&E on the system form:</div>
+        <div class="chk-list" id="ieChk">
+          <div class="chi ie" onclick="chkToggle(this,'ieChk','ieBtn')"><div class="chbox">✓</div>All income sources captured (salary, benefits, other)</div>
+          <div class="chi ie" onclick="chkToggle(this,'ieChk','ieBtn')"><div class="chbox">✓</div>Essential expenditure recorded (housing, utilities, food, transport)</div>
+          <div class="chi ie" onclick="chkToggle(this,'ieChk','ieBtn')"><div class="chbox">✓</div>Other debt commitments noted</div>
+          <div class="chi ie" onclick="chkToggle(this,'ieChk','ieBtn')"><div class="chbox">✓</div>All figures cross-checked against transaction history</div>
+        </div>
+        <button class="chbtn purple" id="ieBtn" onclick="chkNext('ieChk','ieBtn','s4_2')">I&amp;E complete – proceed</button>
+      </div>
+
+      <!-- 4.2 Surplus -->
+      <div class="step" id="s4_2">
+        <div class="slabel sl-ie">4.2 – Monthly Surplus</div>
+        <div class="stext">Does the customer have a monthly surplus after all essential expenditure?</div>
+        <div class="opts">
+          <button class="opt ie" onclick="next('s4_2','yes','s4_3')">Yes – surplus present</button>
+          <button class="opt ie" onclick="next('s4_2','no','s4_4')">No – no surplus</button>
+        </div>
+      </div>
+
+      <!-- 4.3 MCP capacity -->
+      <div class="step" id="s4_3">
+        <div class="slabel sl-ie">4.3 – MCP Capacity</div>
+        <div class="stext">Can the customer meet the full monthly contractual payment (MCP)?</div>
+        <div class="opts" style="flex-wrap:wrap;">
+          <button class="opt ie" onclick="next('s4_3','full_plus','s4_3_full_confirm')" style="min-width:160px;">Yes – meets MCP and<br>has extra for arrears</button>
+          <button class="opt ie" onclick="next('s4_3','full_only','s4_3b')" style="min-width:160px;">Yes – meets MCP but<br>no extra for arrears</button>
+          <button class="opt ie" onclick="next('s4_3','partial','s4_3d')" style="min-width:160px;">Partial – below MCP</button>
+        </div>
+      </div>
+
+      <!-- 4.3 Full repayment confirm -->
+      <div class="step" id="s4_3_full_confirm">
+        <div class="ib green"><span class="ib-i">💷</span><div>Customer can meet MCP and has surplus to contribute toward arrears.</div></div>
+        <div class="slabel sl-ie">4.3 – Confirm Full Repayment</div>
+        <div class="stext">Confirm arrangement details:</div>
+        <div class="chk-list" id="fullChk">
+          <div class="chi ie" onclick="chkToggle(this,'fullChk','fullBtn')"><div class="chbox">✓</div>MCP agreed and confirmed</div>
+          <div class="chi ie" onclick="chkToggle(this,'fullChk','fullBtn')"><div class="chbox">✓</div>Arrears repayment amount agreed</div>
+          <div class="chi ie" onclick="chkToggle(this,'fullChk','fullBtn')"><div class="chbox">✓</div>Review date set and documented</div>
+        </div>
+        <button class="chbtn purple" id="fullBtn" onclick="chkResult('fullChk','fullBtn','plan_full')">Confirm – Full Repayment</button>
+      </div>
+
+      <!-- 4.3b Prior arrangement -->
+      <div class="step" id="s4_3b">
+        <div class="ib info"><span class="ib-i">📋</span><div>Customer meets MCP but has insufficient surplus to clear arrears on top. Check for prior arrangement history – this determines re-age vs capitalisation eligibility.</div></div>
+        <div class="slabel sl-ie">4.3b – Prior Arrangement</div>
+        <div class="stext">Has there been a prior arrangement that was met on this account?</div>
+        <div class="opts">
+          <button class="opt ie" onclick="next('s4_3b','no','s4_3b_reage')">No – no prior arrangement</button>
+          <button class="opt ie" onclick="next('s4_3b','yes','s4_3c')">Yes – prior arrangement met</button>
+        </div>
+      </div>
+
+      <!-- 4.3b Re-age confirm -->
+      <div class="step" id="s4_3b_reage">
+        <div class="ib info"><span class="ib-i">🔁</span><div>Customer must make <b>3 consecutive on-time payments</b> first. On completion, arrears move to end of loan term. If any payment is missed during the 3-month period, the account <b>re-enters the tree at step 4.3</b>.</div></div>
+        <div class="slabel sl-ie">4.3b – Confirm Loan Re-age</div>
+        <div class="stext">Confirm re-age eligibility and commitment with customer:</div>
+        <div class="chk-list" id="reageChk">
+          <div class="chi ie" onclick="chkToggle(this,'reageChk','reageBtn')"><div class="chbox">✓</div>Customer has surplus and meets full MCP – confirmed</div>
+          <div class="chi ie" onclick="chkToggle(this,'reageChk','reageBtn')"><div class="chbox">✓</div>3 consecutive on-time payments requirement explained to customer</div>
+          <div class="chi ie" onclick="chkToggle(this,'reageChk','reageBtn')"><div class="chbox">✓</div>Consequence of missed payment explained (re-enters tree at 4.3)</div>
+          <div class="chi ie" onclick="chkToggle(this,'reageChk','reageBtn')"><div class="chbox">✓</div>Arrangement documented on system</div>
+        </div>
+        <button class="chbtn purple" id="reageBtn" onclick="chkResult('reageChk','reageBtn','plan_reage')">Confirm – Loan Re-age</button>
+      </div>
+
+      <!-- 4.3c Capitalisation check -->
+      <div class="step" id="s4_3c">
+        <div class="ib info"><span class="ib-i">📊</span><div><b>Capitalisation</b> requires: prior arrangement met + lender approval confirmed. Arrears added to outstanding balance and re-amortised.</div></div>
+        <div class="slabel sl-ie">4.3c – Capitalisation Eligibility</div>
+        <div class="stext">Is lender approval for capitalisation obtainable?</div>
+        <div class="opts">
+          <button class="opt ie" onclick="next('s4_3c','yes','s4_3c_confirm')">Yes – lender approval obtainable</button>
+          <button class="opt ie" onclick="next('s4_3c','no','s4_3b_reage')">No – fall back to re-age</button>
+        </div>
+      </div>
+
+      <!-- 4.3c Cap confirm -->
+      <div class="step" id="s4_3c_confirm">
+        <div class="slabel sl-ie">4.3c – Confirm Capitalisation</div>
+        <div class="stext">Confirm capitalisation details:</div>
+        <div class="chk-list" id="capChk">
+          <div class="chi ie" onclick="chkToggle(this,'capChk','capBtn')"><div class="chbox">✓</div>Prior arrangement confirmed as met</div>
+          <div class="chi ie" onclick="chkToggle(this,'capChk','capBtn')"><div class="chbox">✓</div>Lender approval confirmed</div>
+          <div class="chi ie" onclick="chkToggle(this,'capChk','capBtn')"><div class="chbox">✓</div>New balance and re-amortised payments explained to customer</div>
+          <div class="chi ie" onclick="chkToggle(this,'capChk','capBtn')"><div class="chbox">✓</div>Arrangement documented on system</div>
+        </div>
+        <button class="chbtn purple" id="capBtn" onclick="chkResult('capChk','capBtn','plan_cap')">Confirm – Capitalisation</button>
+      </div>
+
+      <!-- 4.3d Token threshold -->
+      <div class="step" id="s4_3d">
+        <div class="ib purple"><span class="ib-i">ℹ️</span><div>Token threshold ≈ 10–20% of MCP. Verify exact figure against current policy. <b>Both reduced and token arrangements require a mandatory review date ≤3 months.</b></div></div>
+        <div class="slabel sl-ie">4.3d – Token Threshold</div>
+        <div class="stext">Is the affordable payment at or above the token threshold (~10–20% of MCP)?</div>
+        <div class="opts">
+          <button class="opt ie" onclick="next('s4_3d','reduced','s4_3d_reduced')">Yes – reduced repayment</button>
+          <button class="opt ie" onclick="next('s4_3d','token','s4_3d_token')">No – token payment</button>
+        </div>
+      </div>
+
+      <!-- 4.3d Reduced confirm -->
+      <div class="step" id="s4_3d_reduced">
+        <div class="slabel sl-ie">4.3d – Confirm Reduced Repayment</div>
+        <div class="stext">Confirm reduced repayment arrangement:</div>
+        <div class="chk-list" id="reducedChk">
+          <div class="chi ie" onclick="chkToggle(this,'reducedChk','reducedBtn')"><div class="chbox">✓</div>Reduced payment amount agreed with customer</div>
+          <div class="chi ie" onclick="chkToggle(this,'reducedChk','reducedBtn')"><div class="chbox">✓</div>Mandatory review date set (≤3 months)</div>
+          <div class="chi ie" onclick="chkToggle(this,'reducedChk','reducedBtn')"><div class="chbox">✓</div>Arrangement documented on system</div>
+        </div>
+        <button class="chbtn purple" id="reducedBtn" onclick="chkResult('reducedChk','reducedBtn','plan_reduced')">Confirm – Reduced Repayment</button>
+      </div>
+
+      <!-- 4.3d Token confirm -->
+      <div class="step" id="s4_3d_token">
+        <div class="slabel sl-ie">4.3d – Confirm Token Payment</div>
+        <div class="stext">Confirm token payment arrangement:</div>
+        <div class="chk-list" id="tokenChk">
+          <div class="chi ie" onclick="chkToggle(this,'tokenChk','tokenBtn')"><div class="chbox">✓</div>Token amount agreed and documented</div>
+          <div class="chi ie" onclick="chkToggle(this,'tokenChk','tokenBtn')"><div class="chbox">✓</div>Mandatory review date set (≤3 months)</div>
+          <div class="chi ie" onclick="chkToggle(this,'tokenChk','tokenBtn')"><div class="chbox">✓</div>Arrangement documented on system</div>
+        </div>
+        <button class="chbtn purple" id="tokenBtn" onclick="chkResult('tokenChk','tokenBtn','plan_token')">Confirm – Token Payment</button>
+      </div>
+
+      <!-- 4.4 Duration (no surplus) -->
+      <div class="step" id="s4_4">
+        <div class="slabel sl-ie">4.4 – Hardship Duration</div>
+        <div class="stext">Is the hardship expected to be temporary (less than 6 months)?</div>
+        <div class="opts">
+          <button class="opt ie" onclick="next('s4_4','temp','s4_4b')">Yes – temporary (&lt;6 months)</button>
+          <button class="opt ie" onclick="next('s4_4','perm','s4_4d')">No – permanent / uncertain</button>
+        </div>
+      </div>
+
+      <!-- 4.4b BS extension applicable -->
+      <div class="step" id="s4_4b">
+        <div class="slabel sl-ie">4.4b – BS Extension</div>
+        <div class="stext">Is an existing Breathing Space extension applicable?</div>
+        <div class="opts">
+          <button class="opt ie" onclick="result('bs_extension_apply')">Yes – BS extension criteria met</button>
+          <button class="opt ie" onclick="next('s4_4b','no','s4_4b_break')">No – payment break</button>
+        </div>
+      </div>
+
+      <!-- 4.4b Payment break confirm -->
+      <div class="step" id="s4_4b_break">
+        <div class="ib info"><span class="ib-i">⏸️</span><div>Account <b>re-enters this tree at Phase 4</b> on break expiry. At that point: capitalise arrears or agree a repayment plan.</div></div>
+        <div class="slabel sl-ie">4.4b – Confirm Payment Break</div>
+        <div class="stext">Confirm payment break details:</div>
+        <div class="chk-list" id="breakChk">
+          <div class="chi ie" onclick="chkToggle(this,'breakChk','breakBtn')"><div class="chbox">✓</div>Suspension period agreed and end date documented</div>
+          <div class="chi ie" onclick="chkToggle(this,'breakChk','breakBtn')"><div class="chbox">✓</div>Post-break plan explained (capitalise or repayment plan)</div>
+          <div class="chi ie" onclick="chkToggle(this,'breakChk','breakBtn')"><div class="chbox">✓</div>Customer understands tree re-enters at Phase 4 on expiry</div>
+          <div class="chi ie" onclick="chkToggle(this,'breakChk','breakBtn')"><div class="chbox">✓</div>Arrangement documented on system</div>
+        </div>
+        <button class="chbtn purple" id="breakBtn" onclick="chkResult('breakChk','breakBtn','plan_break')">Confirm – Payment Break</button>
+      </div>
+
+      <!-- 4.4d residual capacity -->
+      <div class="step" id="s4_4d">
+        <div class="ib red"><span class="ib-i">⚠️</span><div>No surplus, permanent hardship. Check for any minimal residual payment capacity before escalating to LTNA.</div></div>
+        <div class="slabel sl-ie">4.4d – Residual Capacity</div>
+        <div class="stext">Is there any minimal residual partial payment capacity?</div>
+        <div class="opts">
+          <button class="opt ie" onclick="next('s4_4d','minimal','s4_4d_token')">Yes – minimal capacity present</button>
+          <button class="opt danger" onclick="next('s4_4d','none','s4_4e')">No – no capacity at all</button>
+        </div>
+      </div>
+
+      <!-- 4.4d token + flag -->
+      <div class="step" id="s4_4d_token">
+        <div class="ib warn"><span class="ib-i">⚠️</span><div>Interim token arrangement only. Account must also be flagged for specialist LTNA review.</div></div>
+        <div class="slabel sl-ie">4.4d – Token + LTNA Flag</div>
+        <div class="stext">Confirm interim token payment and specialist flag:</div>
+        <div class="chk-list" id="tokenLtnaChk">
+          <div class="chi ie" onclick="chkToggle(this,'tokenLtnaChk','tokenLtnaBtn')"><div class="chbox">✓</div>Token amount agreed and documented</div>
+          <div class="chi ie" onclick="chkToggle(this,'tokenLtnaChk','tokenLtnaBtn')"><div class="chbox">✓</div>Mandatory review date set (≤3 months)</div>
+          <div class="chi ie" onclick="chkToggle(this,'tokenLtnaChk','tokenLtnaBtn')"><div class="chbox">✓</div>Account flagged for specialist LTNA review</div>
+          <div class="chi ie" onclick="chkToggle(this,'tokenLtnaChk','tokenLtnaBtn')"><div class="chbox">✓</div>Arrangement documented on system</div>
+        </div>
+        <button class="chbtn purple" id="tokenLtnaBtn" onclick="chkResult('tokenLtnaChk','tokenLtnaBtn','plan_token_ltna')">Confirm</button>
+      </div>
+
+      <!-- 4.4e failed arr count -->
+      <div class="step" id="s4_4e">
+        <div class="ib red"><span class="ib-i">🚨</span><div><b>Two failed arrangements = auto-flag LTNA.</b> Do not attempt further workout without specialist clearance.</div></div>
+        <div class="slabel sl-ie">4.4e – Failed Arrangements</div>
+        <div class="stext">How many failed arrangements does this account have?</div>
+        <div class="opts">
+          <button class="opt danger" onclick="result('ltna')">0 or 1 – refer to LTNA specialist</button>
+          <button class="opt danger" onclick="result('ltna_auto_flag')">2+ – auto-flag LTNA</button>
+        </div>
       </div>
     </div>
 
-    <!-- Q3b (if Q1=no, Q2b=yes) — Joint account -->
-    <div class="question-block" id="q3b">
-      <div class="warning-box">Please confirm and update the customer's correspondence address in the account management system before proceeding.</div>
-      <div class="question-label">Question 3 of 4</div>
-      <div class="question-text">Is this a joint account?</div>
-      <div class="options">
-        <button class="option-btn" onclick="answer('q3b','yes')">Yes</button>
-        <button class="option-btn" onclick="answer('q3b','no')">No</button>
+    <!-- ════════════════════════════
+         RESULT SCREEN
+         ════════════════════════════ -->
+    <div class="phase-screen" id="phase5">
+      <div class="result-screen" id="resultScreen">
+        <div class="rs-hdr">
+          <div class="rs-ico" id="rsIco"></div>
+          <div><div class="rs-label" id="rsLabel"></div><div class="rs-text" id="rsText"></div></div>
+        </div>
+        <div class="rs-plan" id="rsPlan"></div>
+        <div class="rs-ctx" id="rsCtx" style="display:none">
+          <div class="rs-ctx-lbl">Call context</div>
+          <div id="rsCtxBody"></div>
+        </div>
+        <div class="rs-notes" id="rsNotes"></div>
+        <div class="rs-warn" id="rsWarn" style="display:none"></div>
+        <div class="rs-vuln" id="rsVuln" style="display:none"></div>
+        <div class="rs-doc">📋 Document this outcome and all steps taken on system – mandatory under FCA CONC 7.14.</div>
+        <button class="restart" onclick="restart()">↩ Start Over</button>
       </div>
     </div>
 
-    <!-- Q4 (if Q3b=yes) — Separation -->
-    <div class="question-block" id="q4">
-      <div class="warning-box">Please ensure you discuss the mortgage with both account holders and consider the Income & Expenditure results for each party.</div>
-      <div class="question-label">Question 4 of 4</div>
-      <div class="question-text">Are the joint account holders either separated or currently going through separation?</div>
-      <div class="options">
-        <button class="option-btn" onclick="answer('q4','yes')">Yes</button>
-        <button class="option-btn" onclick="answer('q4','no')">No</button>
-      </div>
-    </div>
+  </div><!-- /body -->
 
-    <!-- RESULTS -->
-    <div class="result-block" id="result">
-      <div class="result-icon" id="resultIcon"></div>
-      <div class="result-label">Recommended Action</div>
-      <div class="result-text" id="resultText"></div>
-      <div class="result-notes" id="resultNotes"></div>
-      <button class="restart-btn" onclick="restart()">↩ Start Over</button>
-    </div>
+  <!-- FOOTER -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 4px 0;flex-wrap:wrap;gap:8px;">
+    <button class="back-btn" id="backBtn" onclick="goBack()">← Back</button>
+    <div style="font-size:10px;color:#aaa;font-family:monospace;" id="stepCtr"></div>
   </div>
-</div>
+
+</div><!-- /shell -->
 
 <script>
-  const state = {};
-  const totalSteps = 4;
+// ── STATE ──
+const S = {};
+let vuln = [], reason = null, ieCtx = null;
+let hist = []; // [{phase, step, S, vuln, reason, ieCtx}]
+let curPhase = 1;
+let curStep = 's1_1';
 
-  const results = {
-    wrong_team: {
-      icon: "🔄",
-      text: "Transfer to the appropriate team.",
-      notes: "<strong>Reason:</strong> The customer's query falls outside this team's remit. Identify the correct department based on the nature of the enquiry and complete a warm transfer."
-    },
-    explore_situation: {
-      icon: "🔍",
-      text: "Explore the customer's situation in full.",
-      notes: "<strong>Reason:</strong> The customer is experiencing broader financial difficulty beyond the mortgage. Conduct a full Income & Expenditure review and explore all available support options before recommending a repayment pathway."
-    },
-    transfer_mortgage_team: {
-      icon: "📋",
-      text: "Transfer the call to the Mortgage Solutions team.",
-      notes: "<strong>Reason:</strong> The customer wishes to explore options under their Mortgage Agreement. Transfer to the specialist team who can review and discuss available arrangements."
-    },
-    regular_process: {
-      icon: "✅",
-      text: "Proceed with standard arrears process.",
-      notes: "<strong>Reason:</strong> No GA marker is present and the account does not meet the criteria for an alternative pathway. Follow the standard process for accounts in arrears."
-    },
-    explore_joint: {
-      icon: "🔍",
-      text: "Explore the situation — joint account with separation.",
-      notes: "<strong>Reason:</strong> Joint account holders are separated or separating. This changes the approach — ensure you discuss the mortgage position with both parties and consider each party's Income & Expenditure independently before recommending next steps."
-    },
-    explore_joint_standard: {
-      icon: "🔍",
-      text: "Explore the situation — joint account.",
-      notes: "<strong>Reason:</strong> This is a joint account with a GA marker. Ensure both account holders are considered in the Income & Expenditure review and discuss next steps with both parties."
-    },
-    explore_single: {
-      icon: "🔍",
-      text: "Explore the customer's situation.",
-      notes: "<strong>Reason:</strong> The account has a GA marker and the customer is the sole account holder. Conduct a full Income & Expenditure review and proceed with the appropriate repayment arrangement."
-    }
-  };
+// ── RESULTS ──
+const RESULTS = {
+  '3pdm_no_customer':{theme:'t-stop',icon:'🤝',label:'3PDM – Customer Not Present',text:'Cannot action. Request customer calls back with DMC present.',plan:'3PDM – No Action',notes:'<b>Action:</b> Do not discuss the account. Advise the DMC that the customer must be present. End call and document.',warn:null},
+  litigation:{theme:'t-stop',icon:'⚖️',label:'Hard Stop – Litigation Active',text:'Transfer to the Legal team immediately.',plan:'Legal Transfer',notes:'<b>Action:</b> Do not discuss the account or offer any arrangements. Transfer immediately to the Legal team.',warn:null},
+  verify_fail_hard:{theme:'t-stop',icon:'🚫',label:'Hard Stop – Verification Failed',text:'End the call immediately. No explanation.',plan:'Call Ended',notes:'<b>Outbound:</b> Name, DOB or postcode mismatch – end call.<br><b>Inbound:</b> DOB or postcode wrong, or all 3 security question attempts failed. Do not indicate what failed. Document the attempt.',warn:null},
+  tp_no_customer:{theme:'t-stop',icon:'📵',label:'Outbound – Customer Not Available',text:'End the call. No details disclosed.',plan:'Call Ended',notes:'<b>Action:</b> Do not disclose the reason for the call or any account details. Advise the third party to have the customer call us, or arrange a callback.',warn:null},
+  tp_no_authority:{theme:'t-stop',icon:'🚫',label:'Third Party – No Authority on File',text:'Cannot proceed. No LOA, PoA or mandate on file.',plan:'Cannot Action',notes:'<b>Action:</b> Do not discuss the account. Advise the third party to establish authority first – the customer will need to provide a mandate or PoA before you can engage.',warn:null},
+  dmc_tag:{theme:'t-xfer',icon:'🤝',label:'DMC Tag – Route to 3PDM Dept',text:'Account is under debt management. Route to 3PDM department.',plan:'3PDM Department',notes:'<b>Action:</b> Do not discuss arrangements directly. Route the call to the 3PDM department who manage this account.',warn:null},
+  bs_active:{theme:'t-bs',icon:'⏸️',label:'Breathing Space Active',text:'BS active – limited contact rules apply. Continue to explore inbound.',plan:'BS – Limited Contact',notes:'<b>Action:</b> Breathing Space is active on this account. Limited contact rules apply throughout this call. You may explore the situation inbound but do not initiate collections activity or pressure arrangements. Note on system.',warn:'⚠️ Do not initiate collections activity or pressure arrangements while BS is active.'},
+  '3pdm_transfer':{theme:'t-xfer',icon:'🤝',label:'3PDM – Transfer to DMC Team',text:'Verification complete. Transfer to the 3PDM team.',plan:'3PDM Team Transfer',notes:'<b>Action:</b> Transfer to the 3PDM team. Do not discuss arrangements directly.',warn:null},
+  multi_broken:{theme:'t-stop',icon:'🔴',label:'Escalate – Multiple Broken Arrangements',text:'2+ broken arrangements. Escalate to team leader before proceeding.',plan:'TL Escalation Required',notes:'<b>Action:</b> Do not offer any further arrangement without TL review. Document history and present the situation to your TL.',warn:null},
+  wrong_team:{theme:'t-xfer',icon:'🔄',label:'Routing Outcome',text:'Transfer to the appropriate team.',plan:'Transfer Out',notes:'<b>Reason:</b> Query is outside this team\'s remit. Identify the correct department and complete a warm transfer.',warn:null},
+  mortgage_solutions:{theme:'t-mtg',icon:'📋',label:'Routing Outcome',text:'Transfer to the Mortgage Solutions team.',plan:'Mortgage Solutions Transfer',notes:'<b>Reason:</b> Customer exploring Agreement options only – no broader financial difficulty. Transfer to the specialist team.',warn:null},
+  bs_referral:{theme:'t-bs',icon:'🤝',label:'Breathing Space – Standard Referral',text:'Refer to StepChange / SCDC. Apply standard BS. Pause collections.',plan:'Breathing Space (Standard)',notes:'<b>Action:</b> Initiate the referral to StepChange / SCDC. Apply standard Breathing Space: pause all collections activity and note on system. End arrangement discussion – do not offer any plan until BS period concludes.',warn:'⚠️ Do not continue arrangement discussion while BS is active.'},
+  income_refused:{theme:'t-stop',icon:'⚠️',label:'Income Verification – Refused',text:'Customer refuses to explain income discrepancy.',plan:'Escalate / Document',notes:'<b>Action:</b> Document the discrepancy and refusal. Issue arrears notice. Escalate to team leader.',warn:null},
+  ltna_no_income:{theme:'t-ltna',icon:'🚨',label:'LTNA – No Income',text:'No income confirmed. Refer to LTNA specialist.',plan:'LTNA Referral',notes:'<b>Reason:</b> No income. I&E not appropriate. No realistic prospect of meeting contractual payments.<br><br><b>Action:</b> Refer to the specialist LTNA team. The specialist may approve: continued token / reduced arrangement, Default as a Solution (TL sign-off + CONC 7.3 documentation required), or formal default / enforcement referral.',warn:'⚠️ Do not attempt further workout without specialist clearance.'},
+  ltna_auto_flag:{theme:'t-ltna',icon:'🚨',label:'LTNA – Auto-Flag (2+ Failed Arrangements)',text:'Two or more failed arrangements. Auto-flag LTNA. No further workout.',plan:'LTNA Auto-Flag',notes:'<b>Reason:</b> Two failed arrangements triggers automatic LTNA flag per policy.<br><br><b>Action:</b> Do not attempt any further arrangement. Refer to the LTNA specialist team. Document all prior steps exhausted.',warn:'⚠️ Do not offer any further arrangement. Specialist clearance required.'},
+  plan_full:{theme:'t-full',icon:'💷',label:'Repayment Plan',text:'Full contractual repayment arranged.',plan:'Full Repayment',notes:'<b>I&E result:</b> Surplus present. Customer meets full MCP and has additional capacity to repay arrears.<br><br><b>Arrangement:</b> MCP + agreed arrears repayment schedule. Review date set and documented.',warn:null},
+  plan_reage:{theme:'t-reage',icon:'🔁',label:'Repayment Plan',text:'Loan re-age agreed – 3 consecutive payments required first.',plan:'Loan Re-age',notes:'<b>I&E result:</b> Surplus present. Customer meets full MCP but insufficient surplus to clear arrears on top. No prior arrangement on account.<br><br><b>Arrangement:</b> Customer makes 3 consecutive on-time payments. On completion, arrears move to end of loan term. If any payment is missed during the 3-month period, account re-enters tree at step 4.3.',warn:'⚠️ If payments missed during 3-month period, re-enter tree at 4.3.'},
+  plan_cap:{theme:'t-cap',icon:'📊',label:'Repayment Plan',text:'Capitalisation approved.',plan:'Capitalisation',notes:'<b>I&E result:</b> Surplus present, meets MCP, prior arrangement met, lender approval confirmed.<br><br><b>Arrangement:</b> Outstanding arrears added to mortgage balance and re-amortised. New payment schedule agreed with customer.',warn:'⚠️ Requires: prior arrangement met + lender approval. Do not proceed without both.'},
+  plan_reduced:{theme:'t-red',icon:'📉',label:'Repayment Plan',text:'Reduced repayment arrangement agreed.',plan:'Reduced Repayment',notes:'<b>I&E result:</b> Surplus present but below full MCP. Payment at or above token threshold (~10–20% MCP).<br><br><b>Arrangement:</b> Agreed reduced payment documented. Mandatory review date set (≤3 months).',warn:'⚠️ Review date ≤3 months is mandatory.'},
+  plan_token:{theme:'t-token',icon:'🪙',label:'Repayment Plan',text:'Token payment arrangement agreed.',plan:'Token Payment',notes:'<b>I&E result:</b> Surplus present but payment falls below token threshold (~10–20% MCP).<br><br><b>Arrangement:</b> Nominal token payment agreed. Mandatory review date set (≤3 months).',warn:'⚠️ Review date ≤3 months is mandatory. Verify exact token threshold against current policy.'},
+  plan_break:{theme:'t-break',icon:'⏸️',label:'Repayment Plan',text:'Payment break arranged.',plan:'Payment Break',notes:'<b>I&E result:</b> No surplus. Temporary hardship (<6 months).<br><br><b>Arrangement:</b> Payments suspended for agreed period. End date documented. At break expiry: capitalise arrears or agree repayment plan. Account re-enters tree at Phase 4 on expiry.',warn:null},
+  bs_extension_apply:{theme:'t-bs',icon:'⏸️',label:'Breathing Space Extension',text:'Apply BS extension. Limited contact rules apply.',plan:'BS Extension Applied',notes:'<b>Action:</b> Apply the Breathing Space extension. Limited contact rules apply throughout. Do not discuss arrangements outside BS extension permitted terms. Document on system.',warn:'⚠️ Do not contact outside BS extension permitted contact rules.'},
+  plan_token_ltna:{theme:'t-token',icon:'🪙',label:'Interim Plan + Specialist Flag',text:'Token payment arranged. Account flagged for LTNA specialist review.',plan:'Token + LTNA Flag',notes:'<b>I&E result:</b> No surplus, permanent hardship, minimal residual capacity present.<br><br><b>Arrangement:</b> Interim token payment with mandatory review date (≤3 months). Account flagged for specialist LTNA review to determine longer-term resolution.',warn:'⚠️ Interim only. Specialist review is required.'},
+  ltna:{theme:'t-ltna',icon:'🚨',label:'LTNA – Specialist Referral',text:'No capacity. Refer to LTNA specialist team.',plan:'LTNA Referral',notes:'<b>I&E result:</b> No surplus, permanent hardship, no residual capacity.<br><br><b>Action:</b> Refer to LTNA specialist. Specialist may approve: token / reduced arrangement, Default as a Solution (TL sign-off mandatory; all prior options documented as exhausted – FCA CONC 7.3), or formal default / enforcement referral.',warn:'⚠️ Default as a Solution: TL sign-off + CONC 7.3 documentation mandatory.'},
+};
 
-  function answer(question, value) {
-    state[question] = value;
-
-    // Highlight selected button
-    document.querySelectorAll(`#${question} .option-btn`).forEach(btn => {
-      btn.classList.toggle('selected', btn.textContent.toLowerCase() === value);
-    });
-
-    hideAll();
-    updateProgress();
-    updateBreadcrumb();
-
-    // Decision tree routing
-    if (question === 'q1') {
-      if (value === 'yes') show('q2a');
-      else show('q2b');
-
-    } else if (question === 'q2a') {
-      if (value === 'no') showResult('wrong_team');
-      else show('q3a');
-
-    } else if (question === 'q3a') {
-      if (value === 'yes') showResult('explore_situation');
-      else showResult('transfer_mortgage_team');
-
-    } else if (question === 'q2b') {
-      if (value === 'no') showResult('regular_process');
-      else show('q3b');
-
-    } else if (question === 'q3b') {
-      if (value === 'yes') show('q4');
-      else showResult('explore_single');
-
-    } else if (question === 'q4') {
-      if (value === 'yes') showResult('explore_joint');
-      else showResult('explore_joint_standard');
-    }
+// ── PRE-CALL DYNAMIC STEPS ──
+function s1_2_thirdparty() {
+  // branch based on call type
+  const callType = S['s1_1'];
+  S['s1_2'] = 'third_party';
+  hist.push({phase:curPhase, step:curStep, S:{...S}, vuln:[...vuln], reason, ieCtx});
+  updateBack();
+  if (callType === 'outbound') {
+    showStep('s1_2b_avail');
+  } else {
+    showStep('s1_2c_loa');
   }
+  updateUI();
+}
 
-  function hideAll() {
-    document.querySelectorAll('.question-block, .result-block').forEach(el => {
-      el.classList.remove('active');
-    });
+function setupVerifyStep() {
+  var callType = S['s1_1'];
+  var ib   = document.getElementById('s1_3_ib_text');
+  var txt  = document.getElementById('s1_3_text');
+  var opts = document.getElementById('s1_3_opts');
+  opts.innerHTML = '';
+  if (callType === 'outbound') {
+    ib.innerHTML = 'Outbound: <b>full name + DOB + postcode</b>. All three must match. Any mismatch = hard stop.';
+    txt.textContent = 'Does the customer correctly confirm their full name, date of birth, and postcode?';
+    var b1 = document.createElement('button'); b1.className='opt'; b1.textContent='Yes – all correct'; b1.onclick=function(){ next('s1_3','pass','s1_4'); }; opts.appendChild(b1);
+    var b2 = document.createElement('button'); b2.className='opt danger'; b2.textContent='No – any mismatch'; b2.onclick=function(){ result('verify_fail_hard'); }; opts.appendChild(b2);
+  } else {
+    ib.innerHTML = 'Inbound: <b>DOB + postcode</b> are non-negotiable hard stops. Then security code or questions.';
+    txt.textContent = 'Does the customer correctly confirm their date of birth AND postcode?';
+    var b1 = document.createElement('button'); b1.className='opt'; b1.textContent='Yes – both correct'; b1.onclick=function(){ next('s1_3','pass','s1_3_sec'); }; opts.appendChild(b1);
+    var b2 = document.createElement('button'); b2.className='opt danger'; b2.textContent='No – either incorrect'; b2.onclick=function(){ result('verify_fail_hard'); }; opts.appendChild(b2);
   }
+}
 
-  function show(id) {
-    document.getElementById(id).classList.add('active');
+function setupBSStep() {
+  var callType = S['s1_1'];
+  var txt  = document.getElementById('s1_4c_text');
+  var opts = document.getElementById('s1_4c_opts');
+  if (callType === 'outbound') {
+    txt.textContent = 'BS accounts are not dialed outbound. If BS is active, this account should not have been queued. Flag and continue.';
+    var b = document.createElement('button');
+    b.className = 'opt ctx';
+    b.textContent = 'Flag and continue';
+    b.onclick = function(){ next('s1_4c','flag','s1_5'); };
+    opts.innerHTML = ''; opts.appendChild(b);
+  } else {
+    txt.textContent = 'Is Breathing Space (standard or extension) currently active on this account?';
+    var b1 = document.createElement('button');
+    b1.className = 'opt danger';
+    b1.textContent = 'Yes – BS active';
+    b1.onclick = function(){ result('bs_active'); };
+    var b2 = document.createElement('button');
+    b2.className = 'opt';
+    b2.textContent = 'No – continue';
+    b2.onclick = function(){ next('s1_4c','no','s1_5'); };
+    opts.innerHTML = ''; opts.appendChild(b1); opts.appendChild(b2);
   }
+}
+// ── NAV ──
+function next(stepId, val, nextId) {
+  hist.push({phase:curPhase, step:curStep, S:{...S}, vuln:[...vuln], reason, ieCtx});
+  S[stepId] = val;
+  // highlight
+  document.querySelectorAll(`#${stepId} .opt`).forEach(b =>
+    b.classList.toggle('sel', b.textContent.trim().toLowerCase().startsWith(val.slice(0,5)))
+  );
+  showStep(nextId);
+  updateUI();
+}
 
-  function showResult(key) {
-    const r = results[key];
-    document.getElementById('resultIcon').textContent = r.icon;
-    document.getElementById('resultText').textContent = r.text;
-    document.getElementById('resultNotes').innerHTML = r.notes;
-    document.getElementById('result').classList.add('active');
-    document.getElementById('progressBar').style.width = '100%';
+function showStep(id) {
+  document.querySelectorAll(`#phase${curPhase} .step`).forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.add('active'); curStep = id;
+    if (id === 's1_3') setupVerifyStep();
+    if (id === 's1_4c') setupBSStep();
   }
+  updateUI();
+}
 
-  function updateProgress() {
-    const answered = Object.keys(state).length;
-    const pct = Math.min((answered / totalSteps) * 100, 90);
-    document.getElementById('progressBar').style.width = pct + '%';
-  }
+function goPhase(n) {
+  hist.push({phase:curPhase, step:curStep, S:{...S}, vuln:[...vuln], reason, ieCtx});
+  document.getElementById(`phase${curPhase}`).classList.remove('active');
+  document.getElementById(`pn${curPhase}`).classList.remove('active');
+  document.getElementById(`pn${curPhase}`).classList.add('done');
+  curPhase = n;
+  document.getElementById(`phase${n}`).classList.add('active');
+  document.getElementById(`pn${n}`).classList.add('active');
+  // reset first step of new phase
+  const firstStep = document.querySelector(`#phase${n} .step`);
+  if (firstStep) { curStep = firstStep.id; firstStep.classList.add('active'); }
+  updateUI();
+}
 
-  function updateBreadcrumb() {
-    const labels = {
-      q1: 'Mortgage status',
-      q2a: 'Exploring options',
-      q2b: 'GA marker',
-      q3a: 'Financial difficulty',
-      q3b: 'Joint account',
-      q4: 'Separation status'
-    };
-    const crumbs = Object.keys(state).map(k => {
-      return `<span>${labels[k] || k}</span>: ${state[k]}`;
-    });
-    document.getElementById('breadcrumb').innerHTML = crumbs.join(' → ');
-  }
+function result(key) {
+  hist.push({phase:curPhase, step:curStep, S:{...S}, vuln:[...vuln], reason, ieCtx});
+  const r = RESULTS[key];
+  if (!r) return;
+  // hide current phase
+  document.getElementById(`phase${curPhase}`).classList.remove('active');
+  document.getElementById(`pn${curPhase}`).classList.remove('active');
+  document.getElementById(`pn${curPhase}`).classList.add('done');
+  // show result phase
+  curPhase = 5;
+  document.getElementById('phase5').classList.add('active');
+  document.getElementById('pn5').classList.add('active');
+  // populate result
+  const rs = document.getElementById('resultScreen');
+  rs.className = 'result-screen ' + r.theme;
+  document.getElementById('rsIco').textContent = r.icon;
+  document.getElementById('rsLabel').textContent = r.label;
+  document.getElementById('rsText').textContent = r.text;
+  document.getElementById('rsPlan').textContent = r.plan;
+  document.getElementById('rsNotes').innerHTML = buildNotes(r, key);
+  document.getElementById('rsNotes').className = 'rs-notes' + (key.startsWith('plan_') ? ' ie-n' : '');
+  const wEl = document.getElementById('rsWarn');
+  r.warn ? (wEl.textContent = r.warn, wEl.style.display='block') : (wEl.style.display='none');
+  const vEl = document.getElementById('rsVuln');
+  const vf = vuln.filter(v => v !== 'none');
+  vf.length ? (vEl.innerHTML='🛡️ <b>Vulnerability noted:</b> '+vf.map(v=>vLbls[v]||v).join(', ')+'. Adjust approach and document.', vEl.style.display='block') : (vEl.style.display='none');
+  const ctx = buildCtx();
+  const ctxEl = document.getElementById('rsCtx');
+  ctx.length ? (document.getElementById('rsCtxBody').innerHTML=ctx.join('<br>'), ctxEl.style.display='block') : (ctxEl.style.display='none');
+  updateUI();
+}
 
-  function restart() {
-    Object.keys(state).forEach(k => delete state[k]);
-    document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
-    document.getElementById('progressBar').style.width = '0%';
-    document.getElementById('breadcrumb').innerHTML = '';
-    hideAll();
-    show('q1');
+// ── CHECKLISTS ──
+function chkToggle(el, listId, btnId) {
+  el.classList.toggle('on');
+  const all = [...document.querySelectorAll(`#${listId} .chi`)].every(c => c.classList.contains('on'));
+  document.getElementById(btnId).classList.toggle('rdy', all);
+}
+function chkNext(listId, btnId, nextId) {
+  hist.push({phase:curPhase, step:curStep, S:{...S}, vuln:[...vuln], reason, ieCtx});
+  document.querySelectorAll(`#${listId} .chi`).forEach(c => c.classList.remove('on'));
+  document.getElementById(btnId).classList.remove('rdy');
+  showStep(nextId);
+  updateUI();
+}
+function chkResult(listId, btnId, key) {
+  document.querySelectorAll(`#${listId} .chi`).forEach(c => c.classList.remove('on'));
+  document.getElementById(btnId).classList.remove('rdy');
+  result(key);
+}
+
+// ── VULN ──
+function toggleVuln(el) {
+  const v = el.dataset.v;
+  if (v === 'none') {
+    document.querySelectorAll('.vtag:not(.vtnone)').forEach(t => t.classList.remove('sel'));
+    vuln = ['none'];
+    el.classList.toggle('sel');
+    if (!el.classList.contains('sel')) vuln = [];
+  } else {
+    document.querySelector('.vtag.vtnone').classList.remove('sel');
+    vuln = vuln.filter(x => x !== 'none');
+    el.classList.toggle('sel');
+    el.classList.contains('sel') ? vuln.push(v) : (vuln = vuln.filter(x => x !== v));
   }
+  document.getElementById('vulnBtn').classList.toggle('rdy', vuln.length > 0);
+}
+function confirmVuln() {
+  if (!vuln.length) return;
+  hist.push({phase:curPhase, step:curStep, S:{...S}, vuln:[...vuln], reason, ieCtx});
+  showStep('s1_6');
+  updateUI();
+}
+
+// ── REASON ──
+function selReason(btn, val) {
+  document.querySelectorAll('.rbtn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  reason = val;
+  document.getElementById('reasonBtn').classList.add('rdy');
+}
+function confirmReason() {
+  if (!reason) return;
+  hist.push({phase:curPhase, step:curStep, S:{...S}, vuln:[...vuln], reason, ieCtx});
+  showStep('s3_2');
+  updateUI();
+}
+
+// ── BACK ──
+function goBack() {
+  if (!hist.length) return;
+  const prev = hist.pop();
+  // restore
+  Object.keys(S).forEach(k => delete S[k]); Object.assign(S, prev.S);
+  vuln = prev.vuln; reason = prev.reason; ieCtx = prev.ieCtx;
+  // switch phase if needed
+  if (prev.phase !== curPhase) {
+    document.getElementById(`phase${curPhase}`).classList.remove('active');
+    document.getElementById(`pn${curPhase}`).classList.remove('active');
+    if (curPhase === 5) document.getElementById('pn5').classList.remove('active');
+    document.getElementById(`pn${prev.phase}`).classList.remove('done');
+    document.getElementById(`pn${prev.phase}`).classList.add('active');
+    document.getElementById(`phase${prev.phase}`).classList.add('active');
+    curPhase = prev.phase;
+  }
+  // hide all steps, show prev step
+  document.querySelectorAll(`#phase${curPhase} .step`).forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(prev.step);
+  if (el) { el.classList.add('active'); curStep = prev.step; }
+  updateUI();
+}
+
+// ── UI ──
+const phaseColors = {1:'#555',2:'#1F4E79',3:'#b8935a',4:'#4a3570',5:'#1a5c33'};
+const phaseTotals = {1:9, 2:6, 3:6, 4:10};
+let stepCounts = {1:0,2:0,3:0,4:0};
+
+function updateUI() {
+  // progress
+  let done = Object.keys(S).length + (reason?1:0) + (vuln.length?1:0);
+  const total = 22;
+  const pct = Math.min((done/total)*95,95);
+  const bar = document.getElementById('progBar');
+  bar.style.width = pct + '%';
+  bar.style.background = phaseColors[curPhase] || '#1F4E79';
+  document.getElementById('progLbl').textContent = curPhase < 5 ? `Phase ${curPhase} of 4` : 'Complete';
+  // phase nav
+  [1,2,3,4,5].forEach(n => {
+    const el = document.getElementById(`pn${n}`);
+    if (!el) return;
+    el.classList.toggle('active', n === curPhase);
+  });
+  // back btn
+  document.getElementById('backBtn').classList.toggle('vis', hist.length > 0);
+  // step counter
+  document.getElementById('stepCtr').textContent = done ? `${done} of ~${total} steps` : '';
+}
+
+const vLbls = {mental_health:'Mental health',illness:'Serious illness',bereavement:'Bereavement',domestic:'Domestic situation',cognitive:'Cognitive / comprehension',stress:'Severe financial stress'};
+const rLbls = {redundancy:'Redundancy / job loss',reduced_income:'Reduced income',illness:'Illness / medical',relationship:'Relationship breakdown',bereavement:'Bereavement',overspending:'Overspending / budgeting',circumstances:'Change in circumstances',other:'Other'};
+
+function buildNotes(r, key) {
+  let h = r.notes;
+  if (key.startsWith('plan_')) {
+    if (S['s2_3b'] === 'separated') h += '<br><br><b>Joint – separation:</b> Apply using independent I&E per holder. Discuss with both parties separately.';
+    else if (S['s2_3b'] === 'together') h += '<br><br><b>Joint account:</b> Combined I&E applied. Discuss next steps with both holders.';
+    if (S['s1_7'] === 'broken_1') h += '<br><br><b>Prior broken arrangement:</b> Apply tighter scrutiny. Emphasise importance of maintaining this arrangement.';
+    if (S['s1_3'] === 'third_party') h += '<br><br><b>Third party:</b> Share all communication and next steps with the authorised third party as appropriate.';
+  }
+  return h;
+}
+
+function buildCtx() {
+  const l = [];
+  if (S['s1_1']) l.push(`📞 ${S['s1_1']==='inbound'?'Inbound':'Outbound'} call`);
+  if (S['s1_2b']==='yes') l.push('🤝 3PDM / DMC tag on account');
+  if (S['s1_3']==='third_party') l.push('👥 Third party on line');
+  if (reason) l.push(`💬 Hardship: ${rLbls[reason]||reason}`);
+  if (S['s1_7']) l.push(`📋 Arrangement history: ${S['s1_7']}`);
+  if (S['s2_3']==='joint') l.push(`🏠 Joint account${S['s2_3b']==='separated'?' – separated':''}`);
+  if (S['s2_1']==='yes') l.push('⚠️ Account in arrears');
+  return l;
+}
+
+// ── RESTART ──
+function restart() {
+  Object.keys(S).forEach(k => delete S[k]);
+  vuln=[]; reason=null; ieCtx=null; hist=[];
+  curPhase=1; curStep='s1_1';
+  // reset all phase screens
+  document.querySelectorAll('.phase-screen').forEach(p => p.classList.remove('active'));
+  document.getElementById('phase1').classList.add('active');
+  // reset all steps
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('s1_1').classList.add('active');
+  // reset phase nav
+  [1,2,3,4,5].forEach(n => {
+    const el = document.getElementById(`pn${n}`);
+    if (el) { el.classList.remove('active','done'); }
+  });
+  document.getElementById('pn1').classList.add('active');
+  // reset ui elements
+  document.querySelectorAll('.opt,.rbtn,.vtag,.chi').forEach(el => el.classList.remove('sel','on'));
+  document.querySelectorAll('.chbtn').forEach(b => b.classList.remove('rdy'));
+  document.getElementById('progBar').style.width='0%';
+  updateUI();
+}
 </script>
 </body>
 </html>

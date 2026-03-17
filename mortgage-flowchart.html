@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mortgage Decision Tool – Process Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f4f0;--paper:#fafaf8;--ink:#0f1923;--ink2:#2d3f50;
+  --muted:#7a8a96;--border:#dddbd5;--navy:#1a3352;--gold:#b8935a;
+  --yes:#2d6a4f;--yes-bg:#ebf5ef;
+  --no:#9b2335;--no-bg:#faebed;
+  --stop-bg:#faebed;--stop:#9b2335;
+  --pre:#4a4a4a;--pre-bg:#f0f0ee;
+  --routing:#1a3352;--routing-bg:#e8eef5;
+  --ctx:#7a5c1e;--ctx-bg:#fdf3e3;
+  --ie:#4a3570;--ie-bg:#f0ecf9;
+  --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:100vh;}
+
+/* masthead */
+.mast{background:var(--navy);padding:36px 48px 30px;border-bottom:3px solid var(--gold);}
+.mast-inner{max-width:1060px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;}
+.kicker{font-family:var(--mono);font-size:10px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+h1{font-size:clamp(22px,3vw,34px);font-weight:700;color:#fff;line-height:1.1;margin-bottom:8px;}
+.msub{font-size:13px;font-weight:300;color:rgba(255,255,255,.45);line-height:1.7;max-width:440px;}
+.mmeta{display:flex;flex-direction:column;gap:4px;text-align:right;}
+.mm{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.35);}
+.mm span{color:rgba(255,255,255,.7);}
+
+/* tabs */
+.tab-bar{background:var(--paper);border-bottom:1px solid var(--border);padding:0 48px;display:flex;overflow-x:auto;}
+.tab{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;padding:13px 18px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);white-space:nowrap;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:7px;}
+.tab:hover{color:var(--ink);}
+.tab.on{color:var(--navy);border-bottom-color:var(--gold);}
+.tdot{width:7px;height:7px;border-radius:50%;}
+
+/* page */
+.page{max-width:1060px;margin:0 auto;padding:36px 48px 80px;}
+.panel{display:none;animation:fi .3s ease;}.panel.on{display:block;}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* section label */
+.sl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:12px;}
+.sl::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* phase intro */
+.pi{background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:18px 22px;margin-bottom:28px;display:flex;align-items:flex-start;gap:14px;}
+.pi-badge{font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;padding:3px 9px;border-radius:3px;flex-shrink:0;margin-top:2px;}
+.pi-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+.pi-desc{font-size:12px;color:var(--muted);line-height:1.7;}
+
+/* ── FLOW PRIMITIVES ── */
+.flow{display:flex;flex-direction:column;align-items:center;}
+
+/* connector */
+.vc{display:flex;flex-direction:column;align-items:center;}
+.vl{width:1px;background:var(--border);}
+.vl.y{background:var(--yes);}.vl.n{background:var(--no);}.vl.p{background:var(--ie);}
+.arr{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;}
+.arr.d{border-top:5px solid var(--border);}
+.arr.y{border-top:5px solid var(--yes);}
+.arr.n{border-top:5px solid var(--no);}
+.arr.p{border-top:5px solid var(--ie);}
+
+/* horizontal line */
+.hl{height:1px;width:100%;}
+.hl.y{background:var(--yes);}.hl.n{background:var(--no);}
+.hl.g{background:var(--border);}.hl.p{background:var(--ie);}
+
+/* branch tags */
+.bt{display:inline-block;font-family:var(--mono);font-size:8px;font-weight:500;letter-spacing:1.5px;padding:2px 7px;border-radius:2px;text-transform:uppercase;}
+.bt.y{background:var(--yes-bg);color:var(--yes);}
+.bt.n{background:var(--no-bg);color:var(--no);}
+.bt.g{background:#eee;color:#555;}
+.bt.p{background:var(--ie-bg);color:var(--ie);}
+
+/* start pill */
+.pill{border-radius:40px;padding:9px 26px;display:inline-block;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;}
+.pill.start{background:var(--navy);color:#fff;}
+
+/* DIAMOND */
+.dm{position:relative;display:flex;align-items:center;justify-content:center;}
+.dm-b{position:absolute;inset:-1px;clip-path:polygon(50% 0%,100% 50%,50% 100%,0 50%);background:var(--border);}
+.dm-f{position:absolute;inset:1px;clip-path:polygon(50% 0%,100% 50%,50% 100%,0 50%);background:var(--paper);}
+.dm-c{position:relative;z-index:2;text-align:center;}
+.dm-q{font-family:var(--mono);font-size:7.5px;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;}
+.dm-t{font-weight:600;color:var(--ink);line-height:1.4;}
+
+/* ACTION / RESULT BOX */
+.box{border-radius:7px;padding:13px 16px;border:1px solid transparent;width:100%;}
+.box-icon{font-size:15px;margin-bottom:5px;}
+.box-type{font-family:var(--mono);font-size:8px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;}
+.box-title{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:3px;line-height:1.3;}
+.box-desc{font-size:11px;color:var(--muted);line-height:1.65;}
+.box-list{margin:4px 0 0 14px;font-size:11px;color:var(--muted);line-height:1.8;}
+
+.box.stop  {background:var(--stop-bg); border-color:#e8aaaa;} .box.stop .box-type{color:var(--stop);}
+.box.warn  {background:#fff8e1;        border-color:#ffc107;} .box.warn .box-type{color:#7a5c1e;}
+.box.info  {background:var(--routing-bg);border-color:#b0c4dc;} .box.info .box-type{color:var(--routing);}
+.box.ctx   {background:var(--ctx-bg);  border-color:#e0c98a;} .box.ctx .box-type{color:var(--ctx);}
+.box.ie    {background:var(--ie-bg);   border-color:#c4b8e4;} .box.ie .box-type{color:var(--ie);}
+.box.full  {background:#e8f5ee;border-color:#a8d5b8;} .box.full .box-type{color:#1a5c33;}
+.box.reage {background:#e8f0fd;border-color:#aabde8;} .box.reage .box-type{color:#1a3a7a;}
+.box.cap   {background:#e8eaf8;border-color:#b0b8e8;} .box.cap .box-type{color:#2a2a7a;}
+.box.red   {background:#fff8e8;border-color:#e0c98a;} .box.red .box-type{color:#7a5c1e;}
+.box.token {background:#fef0e6;border-color:#e8c4a0;} .box.token .box-type{color:#8a4a10;}
+.box.brk   {background:#e8f4f7;border-color:#a0ccd8;} .box.brk .box-type{color:#1a5c6b;}
+.box.bs    {background:var(--ie-bg);   border-color:#c4b8e4;} .box.bs .box-type{color:var(--ie);}
+.box.ltna  {background:var(--stop-bg); border-color:#e8aaaa;} .box.ltna .box-type{color:var(--stop);}
+
+/* STUB (continues to next phase) */
+.stub{border:1.5px dashed var(--ie);border-radius:6px;padding:8px 14px;text-align:center;background:rgba(74,53,112,.03);width:100%;}
+.stub-lbl{font-family:var(--mono);font-size:9px;color:var(--ie);font-weight:500;letter-spacing:1px;text-transform:uppercase;}
+.stub-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* SPLIT */
+.split{display:flex;align-items:flex-start;width:100%;}
+.sl-col{flex:1;display:flex;flex-direction:column;align-items:center;}
+.sdiv{width:1px;background:var(--border);align-self:stretch;flex-shrink:0;}
+.sp{padding:0 10px;}.spsm{padding:0 7px;}.spxs{padding:0 4px;}
+
+/* NOTE */
+.note{display:inline-block;background:rgba(184,147,90,.08);border:1px solid rgba(184,147,90,.25);border-radius:4px;padding:7px 13px;font-family:var(--mono);font-size:9px;color:var(--ctx);margin-top:14px;line-height:1.6;width:100%;}
+
+/* spacing */
+.g4{height:4px}.g6{height:6px}.g8{height:8px}.g10{height:10px}.g12{height:12px}.g16{height:16px}.g20{height:20px}.g24{height:24px}
+
+/* outcomes grid */
+.og{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:40px;}
+.oc{background:var(--paper);border:1px solid var(--border);border-radius:6px;padding:16px;transition:border-color .2s,transform .15s;}
+.oc:hover{transform:translateY(-2px);border-color:var(--navy);}
+.oc-icon{font-size:18px;margin-bottom:6px;}
+.oc-phase{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.oc-title{font-size:12.5px;font-weight:700;color:var(--ink2);margin-bottom:4px;}
+.oc-desc{font-size:11px;color:var(--muted);line-height:1.6;}
+
+/* footer */
+.foot{max-width:1060px;margin:0 auto;padding:22px 48px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+.fl{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.fl b{color:var(--ink2);}
+.flink{font-family:var(--mono);font-size:11px;color:var(--navy);text-decoration:none;display:flex;align-items:center;gap:6px;padding:6px 13px;border:1px solid var(--navy);border-radius:4px;transition:background .15s,color .15s;}
+.flink:hover{background:var(--navy);color:#fff;}
+
+@media(max-width:640px){.mast,.page,.foot{padding-left:20px;padding-right:20px;}.tab-bar{padding:0 16px;}}
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<div class="mast">
+  <div class="mast-inner">
+    <div>
+      <div class="kicker">HSBC · Change Management · 2024</div>
+      <h1>Mortgage Decision Tool<br>Process Flow</h1>
+      <p class="msub">Full end-to-end agent flow. UK / FCA · Collections · Conventional Mortgage.</p>
+    </div>
+    <div class="mmeta">
+      <div class="mm">Phases <span>4</span></div>
+      <div class="mm">Steps <span>20+</span></div>
+      <div class="mm">Terminal outcomes <span>20</span></div>
+      <div class="mm">Standard <span>FCA CONC 7.3 / 7.14</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <div class="tab on" onclick="sw('pre')"  id="tab-pre" ><div class="tdot" style="background:#555"></div>Pre-call</div>
+  <div class="tab"    onclick="sw('rt')"   id="tab-rt"  ><div class="tdot" style="background:var(--navy)"></div>Routing</div>
+  <div class="tab"    onclick="sw('ctx')"  id="tab-ctx" ><div class="tdot" style="background:var(--gold)"></div>Context</div>
+  <div class="tab"    onclick="sw('ie')"   id="tab-ie"  ><div class="tdot" style="background:var(--ie)"></div>I&amp;E</div>
+  <div class="tab"    onclick="sw('plans')" id="tab-plans"><div class="tdot" style="background:#1a5c33"></div>Plans</div>
+  <div class="tab"    onclick="sw('all')"  id="tab-all" ><div class="tdot" style="background:var(--muted)"></div>All Outcomes</div>
+</div>
+
+<div class="page">
+
+<!-- ══════════════════════
+     TAB 1 – PRE-CALL
+     ══════════════════════ -->
+<div class="panel on" id="panel-pre">
+  <div class="pi">
+    <div class="pi-badge" style="background:#555;color:#fff;">Phase 1</div>
+    <div><div class="pi-title">Pre-call Checks</div><div class="pi-desc">Establish who is on the line first – no tipping off. Verify identity, then check account flags. Any hard stop ends routing.</div></div>
+  </div>
+
+  <div class="flow">
+    <div><span class="pill start">Call received</span></div>
+    <div class="vc"><div class="vl" style="height:18px"></div><div class="arr d"></div></div><div class="g4"></div>
+
+    <!-- 1.1 Call type -->
+    <div class="dm" style="width:240px;height:78px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 34px"><div class="dm-q">1.1</div><div class="dm-t" style="font-size:11px">Inbound or<br>outbound?</div></div></div>
+
+    <div class="split" style="width:100%">
+      <!-- INBOUND -->
+      <div class="sl-col sp" style="margin-top:39px">
+        <div class="hl y"></div>
+        <div class="vc"><div class="vl y" style="height:11px"></div><div class="bt y" style="margin-bottom:3px">INBOUND</div><div class="vl y" style="height:11px"></div><div class="arr y"></div></div><div class="g6"></div>
+
+        <!-- 1.2 inbound – who is on line -->
+        <div class="dm" style="width:210px;height:74px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 28px"><div class="dm-q">1.2</div><div class="dm-t" style="font-size:10.5px">Who is on<br>the line?</div></div></div>
+
+        <div class="split" style="width:100%">
+          <!-- customer directly -->
+          <div class="sl-col spsm">
+            <div class="vc"><div class="vl y" style="height:9px"></div><div class="bt y" style="font-size:7.5px;margin-bottom:2px">Customer</div><div class="vl y" style="height:9px"></div><div class="arr y"></div></div><div class="g4"></div>
+            <div class="box info" style="max-width:140px">
+              <div class="box-type">Continue</div>
+              <div class="box-title">Customer on line</div>
+              <div class="box-desc">Proceed to verification →</div>
+            </div>
+          </div>
+          <div class="sdiv"></div>
+          <!-- third party inbound -->
+          <div class="sl-col spsm" style="margin-top:37px">
+            <div class="hl n"></div>
+            <div class="vc"><div class="vl n" style="height:9px"></div><div class="bt n" style="font-size:7.5px;margin-bottom:2px">3rd party</div><div class="vl n" style="height:9px"></div><div class="arr n"></div></div><div class="g4"></div>
+            <!-- LOA check -->
+            <div class="dm" style="width:180px;height:68px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 22px"><div class="dm-q">1.2b</div><div class="dm-t" style="font-size:10px">LOA / PoA /<br>mandate on file?</div></div></div>
+            <div class="split" style="width:100%">
+              <div class="sl-col spxs" style="margin-top:34px">
+                <div class="hl y"></div>
+                <div class="vc"><div class="vl y" style="height:7px"></div><div class="bt y" style="font-size:7px;padding:1px 4px;margin-bottom:2px">YES</div><div class="vl y" style="height:7px"></div><div class="arr y"></div></div><div class="g4"></div>
+                <div class="box info">
+                  <div class="box-type">Verify 3rd party</div>
+                  <div class="box-title">Own details + customer account details</div>
+                  <div class="box-desc">DOB + postcode minimum. Proceed to flags →</div>
+                </div>
+              </div>
+              <div class="sdiv"></div>
+              <div class="sl-col spxs">
+                <div class="vc"><div class="vl n" style="height:7px"></div><div class="bt n" style="font-size:7px;padding:1px 4px;margin-bottom:2px">NO</div><div class="vl n" style="height:7px"></div><div class="arr n"></div></div><div class="g4"></div>
+                <div class="box stop">
+                  <div class="box-icon">🚫</div>
+                  <div class="box-type">Hard Stop</div>
+                  <div class="box-title">No authority on file</div>
+                  <div class="box-desc">Cannot proceed. Advise to establish LOA/PoA first.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- inbound verification -->
+        <div class="g16"></div>
+        <div class="vc"><div class="vl" style="height:12px"></div><div class="arr d"></div></div><div class="g4"></div>
+        <div class="box warn" style="max-width:320px">
+          <div class="box-icon">🔐</div>
+          <div class="box-type">1.3 – Inbound Verification</div>
+          <div class="box-title">DOB + postcode – non-negotiable</div>
+          <div class="box-desc">Either wrong → hard stop, end call immediately, no explanation.<br><br>Both correct → security code (if set) → correct = pass. No security code → 3 security questions, no hints, 3 attempts. All failed → hard stop.</div>
+        </div>
+      </div><!-- /INBOUND -->
+
+      <div class="sdiv"></div>
+
+      <!-- OUTBOUND -->
+      <div class="sl-col sp">
+        <div class="vc"><div class="vl n" style="height:11px"></div><div class="bt n" style="margin-bottom:3px">OUTBOUND</div><div class="vl n" style="height:11px"></div><div class="arr n"></div></div><div class="g6"></div>
+
+        <!-- 1.2 outbound – who picks up -->
+        <div class="dm" style="width:210px;height:74px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 28px"><div class="dm-q">1.2</div><div class="dm-t" style="font-size:10.5px">Who picks<br>up?</div></div></div>
+
+        <div class="split" style="width:100%">
+          <!-- customer picks up -->
+          <div class="sl-col spsm">
+            <div class="vc"><div class="vl y" style="height:9px"></div><div class="bt y" style="font-size:7.5px;margin-bottom:2px">Customer</div><div class="vl y" style="height:9px"></div><div class="arr y"></div></div><div class="g4"></div>
+            <div class="box info" style="max-width:140px">
+              <div class="box-type">Continue</div>
+              <div class="box-title">Customer on line</div>
+              <div class="box-desc">Proceed to verification →</div>
+            </div>
+          </div>
+          <div class="sdiv"></div>
+          <!-- third party picks up outbound -->
+          <div class="sl-col spsm" style="margin-top:37px">
+            <div class="hl n"></div>
+            <div class="vc"><div class="vl n" style="height:9px"></div><div class="bt n" style="font-size:7.5px;margin-bottom:2px">3rd party</div><div class="vl n" style="height:9px"></div><div class="arr n"></div></div><div class="g4"></div>
+            <div class="dm" style="width:180px;height:68px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 22px"><div class="dm-q">1.2b</div><div class="dm-t" style="font-size:10px">Customer<br>available?</div></div></div>
+            <div class="split" style="width:100%">
+              <div class="sl-col spxs" style="margin-top:34px">
+                <div class="hl y"></div>
+                <div class="vc"><div class="vl y" style="height:7px"></div><div class="bt y" style="font-size:7px;padding:1px 4px;margin-bottom:2px">YES</div><div class="vl y" style="height:7px"></div><div class="arr y"></div></div><div class="g4"></div>
+                <div class="box info">
+                  <div class="box-type">Customer on line</div>
+                  <div class="box-title">Proceed to verify</div>
+                  <div class="box-desc">Customer comes on. Continue →</div>
+                </div>
+              </div>
+              <div class="sdiv"></div>
+              <div class="sl-col spxs">
+                <div class="vc"><div class="vl n" style="height:7px"></div><div class="bt n" style="font-size:7px;padding:1px 4px;margin-bottom:2px">NO</div><div class="vl n" style="height:7px"></div><div class="arr n"></div></div><div class="g4"></div>
+                <div class="box stop">
+                  <div class="box-icon">📵</div>
+                  <div class="box-type">End Call</div>
+                  <div class="box-title">Customer not available</div>
+                  <div class="box-desc">No details disclosed. Arrange callback.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- outbound verification -->
+        <div class="g16"></div>
+        <div class="vc"><div class="vl" style="height:12px"></div><div class="arr d"></div></div><div class="g4"></div>
+        <div class="box warn" style="max-width:320px">
+          <div class="box-icon">🔐</div>
+          <div class="box-type">1.3 – Outbound Verification (lighter)</div>
+          <div class="box-title">Full name + DOB + postcode</div>
+          <div class="box-desc">All three must match. Any mismatch → hard stop, end call immediately.</div>
+        </div>
+      </div><!-- /OUTBOUND -->
+    </div><!-- /1.1 split -->
+
+    <!-- converge after verification -->
+    <div class="g20"></div>
+    <div class="vc"><div class="vl" style="height:14px"></div><div class="arr d"></div></div><div class="g4"></div>
+    <div class="box stop" style="max-width:420px;background:#fff8e1;border-color:#ffc107;">
+      <div class="box-type" style="color:#7a5c1e;">⚠ Verification fail = hard stop</div>
+      <div class="box-desc" style="color:#5d4037;">Any verification failure ends the call immediately. No explanation given. Document the attempt.</div>
+    </div>
+    <div class="g16"></div>
+    <div class="vc"><div class="vl" style="height:14px"></div><div class="arr d"></div></div><div class="g4"></div>
+
+    <!-- 1.4 Account flags -->
+    <div class="box ctx" style="max-width:480px">
+      <div class="box-icon">🔍</div>
+      <div class="box-type">1.4 – Account Flags (post-verification)</div>
+      <div class="box-title">Check in order – first flag hit stops here</div>
+    </div>
+    <div class="g12"></div>
+
+    <div class="split" style="width:100%;max-width:720px;align-self:center">
+      <!-- DMC tag -->
+      <div class="sl-col sp">
+        <div class="vc"><div class="vl" style="height:10px"></div><div class="arr d"></div></div><div class="g4"></div>
+        <div class="dm" style="width:160px;height:64px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 20px"><div class="dm-q">Flag 1</div><div class="dm-t" style="font-size:10px">DMC tag<br>on account?</div></div></div>
+        <div class="split" style="width:100%">
+          <div class="sl-col spxs" style="margin-top:32px">
+            <div class="hl y"></div>
+            <div class="vc"><div class="vl y" style="height:7px"></div><div class="bt y" style="font-size:7px;padding:1px 4px;margin-bottom:2px">YES</div><div class="vl y" style="height:7px"></div><div class="arr y"></div></div><div class="g4"></div>
+            <div class="box stop">
+              <div class="box-icon">🤝</div>
+              <div class="box-type">Route to 3PDM</div>
+              <div class="box-title">DMC manages account</div>
+              <div class="box-desc">Route to 3PDM dept. No direct arrangement discussion.</div>
+            </div>
+          </div>
+          <div class="sdiv"></div>
+          <div class="sl-col spxs">
+            <div class="vc"><div class="vl n" style="height:7px"></div><div class="bt n" style="font-size:7px;padding:1px 4px;margin-bottom:2px">NO</div><div class="vl n" style="height:7px"></div><div class="arr n"></div></div><div class="g4"></div>
+            <div class="box info"><div class="box-type">Continue</div><div class="box-title">Check next flag</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="sdiv"></div>
+      <!-- Litigation -->
+      <div class="sl-col sp">
+        <div class="vc"><div class="vl" style="height:10px"></div><div class="arr d"></div></div><div class="g4"></div>
+        <div class="dm" style="width:160px;height:64px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 20px"><div class="dm-q">Flag 2</div><div class="dm-t" style="font-size:10px">Litigation /<br>legal hold?</div></div></div>
+        <div class="split" style="width:100%">
+          <div class="sl-col spxs" style="margin-top:32px">
+            <div class="hl y"></div>
+            <div class="vc"><div class="vl y" style="height:7px"></div><div class="bt y" style="font-size:7px;padding:1px 4px;margin-bottom:2px">YES</div><div class="vl y" style="height:7px"></div><div class="arr y"></div></div><div class="g4"></div>
+            <div class="box stop">
+              <div class="box-icon">⚖️</div>
+              <div class="box-type">Hard Stop</div>
+              <div class="box-title">Transfer to Legal</div>
+              <div class="box-desc">No account discussion. No arrangements. Transfer immediately.</div>
+            </div>
+          </div>
+          <div class="sdiv"></div>
+          <div class="sl-col spxs">
+            <div class="vc"><div class="vl n" style="height:7px"></div><div class="bt n" style="font-size:7px;padding:1px 4px;margin-bottom:2px">NO</div><div class="vl n" style="height:7px"></div><div class="arr n"></div></div><div class="g4"></div>
+            <div class="box info"><div class="box-type">Continue</div><div class="box-title">Check next flag</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="sdiv"></div>
+      <!-- BS -->
+      <div class="sl-col sp">
+        <div class="vc"><div class="vl" style="height:10px"></div><div class="arr d"></div></div><div class="g4"></div>
+        <div class="dm" style="width:160px;height:64px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 20px"><div class="dm-q">Flag 3</div><div class="dm-t" style="font-size:10px">Breathing Space<br>active? (inbound)</div></div></div>
+        <div class="split" style="width:100%">
+          <div class="sl-col spxs" style="margin-top:32px">
+            <div class="hl y"></div>
+            <div class="vc"><div class="vl y" style="height:7px"></div><div class="bt y" style="font-size:7px;padding:1px 4px;margin-bottom:2px">YES</div><div class="vl y" style="height:7px"></div><div class="arr y"></div></div><div class="g4"></div>
+            <div class="box bs">
+              <div class="box-icon">⏸️</div>
+              <div class="box-type">Note &amp; Continue</div>
+              <div class="box-title">Limited contact rules</div>
+              <div class="box-desc">Apply BS rules throughout. Explore inbound – do not pressure arrangements.</div>
+            </div>
+          </div>
+          <div class="sdiv"></div>
+          <div class="sl-col spxs">
+            <div class="vc"><div class="vl n" style="height:7px"></div><div class="bt n" style="font-size:7px;padding:1px 4px;margin-bottom:2px">NO</div><div class="vl n" style="height:7px"></div><div class="arr n"></div></div><div class="g4"></div>
+            <div class="box info"><div class="box-type">Continue</div><div class="box-title">No flags</div></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /flags split -->
+
+    <div class="g20"></div>
+    <div class="vc"><div class="vl" style="height:14px"></div><div class="arr d"></div></div><div class="g4"></div>
+
+    <!-- 1.5 Vulnerability -->
+    <div class="box warn" style="max-width:480px">
+      <div class="box-icon">🛡️</div>
+      <div class="box-type">1.5 – Vulnerability Check</div>
+      <div class="box-title">Note indicators, adjust approach, flag on system, continue</div>
+      <div class="box-desc">Mental health · Serious illness · Bereavement · Domestic situation · Cognitive / comprehension · Severe financial stress.<br>Do not stop – adjust communication approach throughout the call.</div>
+    </div>
+    <div class="vc"><div class="vl" style="height:14px"></div><div class="arr d"></div></div><div class="g4"></div>
+
+    <!-- 1.6 Arrangement history -->
+    <div class="dm" style="width:260px;height:80px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 36px"><div class="dm-q">1.6</div><div class="dm-t" style="font-size:11px">Arrangement<br>history?</div></div></div>
+
+    <div class="split" style="width:100%">
+      <div class="sl-col spxs" style="margin-top:40px">
+        <div class="hl g"></div>
+        <div class="vc"><div class="vl" style="height:8px"></div><div class="bt g" style="margin-bottom:2px">None</div><div class="vl" style="height:8px"></div><div class="arr d"></div></div><div class="g4"></div>
+        <div class="stub"><div class="stub-lbl">→ Phase 2</div><div class="stub-sub">First time, note context</div></div>
+      </div>
+      <div class="sdiv"></div>
+      <div class="sl-col spxs">
+        <div class="vc"><div class="vl" style="height:8px"></div><div class="bt g" style="margin-bottom:2px">Active</div><div class="vl" style="height:8px"></div><div class="arr d"></div></div><div class="g4"></div>
+        <div class="box warn">
+          <div class="box-type">Establish reason</div>
+          <div class="box-title">Why calling with active arrangement?</div>
+          <div class="box-desc">Cannot maintain / query / wants to increase → establish then → Phase 2</div>
+        </div>
+      </div>
+      <div class="sdiv"></div>
+      <div class="sl-col spxs">
+        <div class="vc"><div class="vl" style="height:8px"></div><div class="bt g" style="margin-bottom:2px">1 broken</div><div class="vl" style="height:8px"></div><div class="arr d"></div></div><div class="g4"></div>
+        <div class="stub"><div class="stub-lbl">→ Phase 2</div><div class="stub-sub">Tighter scrutiny throughout</div></div>
+      </div>
+      <div class="sdiv"></div>
+      <div class="sl-col spxs">
+        <div class="vc"><div class="vl n" style="height:8px"></div><div class="bt n" style="font-size:7.5px;margin-bottom:2px">2+ broken</div><div class="vl n" style="height:8px"></div><div class="arr n"></div></div><div class="g4"></div>
+        <div class="box stop">
+          <div class="box-icon">🔴</div>
+          <div class="box-type">Escalate</div>
+          <div class="box-title">TL review required</div>
+          <div class="box-desc">Do not offer any arrangement without TL sign-off.</div>
+        </div>
+      </div>
+    </div><!-- /arr history -->
+  </div><!-- /flow -->
+</div>
+
+<!-- ══════════════════════
+     TAB 2 – ROUTING
+     ══════════════════════ -->
+<div class="panel" id="panel-rt">
+  <div class="pi">
+    <div class="pi-badge" style="background:var(--navy);color:#fff;">Phase 2</div>
+    <div><div class="pi-title">Account Routing</div><div class="pi-desc">Determine arrears status, handle GA marker, confirm account type.</div></div>
+  </div>
+  <div class="flow">
+    <div><span class="pill start">Pre-call complete</span></div>
+    <div class="vc"><div class="vl" style="height:18px"></div><div class="arr d"></div></div><div class="g4"></div>
+
+    <!-- 2.1 In arrears -->
+    <div class="dm" style="width:260px;height:82px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 36px"><div class="dm-q">2.1</div><div class="dm-t" style="font-size:11px">Account<br>in arrears?</div></div></div>
+
+    <div class="split" style="width:100%">
+      <!-- NO – up to date -->
+      <div class="sl-col sp" style="margin-top:41px">
+        <div class="hl n"></div>
+        <div class="vc"><div class="vl n" style="height:11px"></div><div class="bt n" style="margin-bottom:3px">NO – up to date</div><div class="vl n" style="height:11px"></div><div class="arr n"></div></div><div class="g8"></div>
+        <div class="dm" style="width:210px;height:72px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 26px"><div class="dm-q">2.1b</div><div class="dm-t" style="font-size:10.5px">Reason<br>for call?</div></div></div>
+        <div class="split" style="width:100%">
+          <div class="sl-col spxs" style="margin-top:36px">
+            <div class="hl g"></div>
+            <div class="vc"><div class="vl" style="height:8px"></div><div class="bt g" style="font-size:7px;padding:1px 4px;margin-bottom:2px">Agreement options</div><div class="vl" style="height:8px"></div><div class="arr d"></div></div><div class="g4"></div>
+            <div class="dm" style="width:170px;height:64px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 20px"><div class="dm-q">2.1c</div><div class="dm-t" style="font-size:10px">Broader difficulty<br>also present?</div></div></div>
+            <div class="split" style="width:100%">
+              <div class="sl-col spxs" style="margin-top:32px">
+                <div class="hl y"></div>
+                <div class="vc"><div class="vl y" style="height:6px"></div><div class="bt y" style="font-size:7px;padding:1px 3px;margin-bottom:2px">YES</div><div class="vl y" style="height:6px"></div><div class="arr y"></div></div><div class="g4"></div>
+                <div class="stub"><div class="stub-lbl">→ Phase 3</div></div>
+              </div>
+              <div class="sdiv"></div>
+              <div class="sl-col spxs">
+                <div class="vc"><div class="vl n" style="height:6px"></div><div class="bt n" style="font-size:7px;padding:1px 3px;margin-bottom:2px">NO</div><div class="vl n" style="height:6px"></div><div class="arr n"></div></div><div class="g4"></div>
+                <div class="box stop" style="font-size:.9em">
+                  <div class="box-icon">📋</div>
+                  <div class="box-type">Transfer</div>
+                  <div class="box-title">Mortgage Solutions</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sdiv"></div>
+          <div class="sl-col spxs">
+            <div class="vc"><div class="vl" style="height:8px"></div><div class="bt g" style="font-size:7px;padding:1px 4px;margin-bottom:2px">Financial difficulty</div><div class="vl" style="height:8px"></div><div class="arr d"></div></div><div class="g4"></div>
+            <div class="stub"><div class="stub-lbl">→ Phase 3</div></div>
+          </div>
+          <div class="sdiv"></div>
+          <div class="sl-col spxs">
+            <div class="vc"><div class="vl n" style="height:8px"></div><div class="bt n" style="font-size:7px;padding:1px 4px;margin-bottom:2px">Wrong team</div><div class="vl n" style="height:8px"></div><div class="arr n"></div></div><div class="g4"></div>
+            <div class="box stop" style="font-size:.9em">
+              <div class="box-icon">🔄</div>
+              <div class="box-type">Transfer Out</div>
+              <div class="box-title">Wrong team</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /NO -->
+
+      <div class="sdiv"></div>
+
+      <!-- YES – in arrears -->
+      <div class="sl-col sp">
+        <div class="vc"><div class="vl y" style="height:11px"></div><div class="bt y" style="margin-bottom:3px">YES – arrears</div><div class="vl y" style="height:11px"></div><div class="arr y"></div></div><div class="g8"></div>
+
+        <!-- 2.2 GA marker -->
+        <div class="dm" style="width:210px;height:72px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 26px"><div class="dm-q">2.2</div><div class="dm-t" style="font-size:10.5px">GA marker<br>present?</div></div></div>
+
+        <div class="split" style="width:100%">
+          <div class="sl-col spsm" style="margin-top:36px">
+            <div class="hl y"></div>
+            <div class="vc"><div class="vl y" style="height:8px"></div><div class="bt y" style="font-size:7.5px;margin-bottom:2px">YES</div><div class="vl y" style="height:8px"></div><div class="arr y"></div></div><div class="g4"></div>
+            <div class="box warn">
+              <div class="box-icon">📬</div>
+              <div class="box-type">Required action</div>
+              <div class="box-title">Update address &amp; demographics</div>
+              <div class="box-desc">Letters returned undelivered. Confirm address, update correspondence and demographics before continuing.</div>
+            </div>
+            <div class="vc"><div class="vl" style="height:10px"></div><div class="arr d"></div></div><div class="g4"></div>
+          </div>
+          <div class="sdiv"></div>
+          <div class="sl-col spsm">
+            <div class="vc"><div class="vl n" style="height:8px"></div><div class="bt n" style="font-size:7.5px;margin-bottom:2px">NO</div><div class="vl n" style="height:8px"></div><div class="arr n"></div></div><div class="g4"></div>
+            <div class="box info"><div class="box-type">Continue</div><div class="box-title">No GA marker</div></div>
+            <div class="g20"></div>
+          </div>
+        </div>
+
+        <!-- converge → 2.3 -->
+        <div class="g12"></div>
+        <div class="vc"><div class="vl" style="height:12px"></div><div class="arr d"></div></div><div class="g4"></div>
+
+        <!-- 2.3 Joint -->
+        <div class="dm" style="width:210px;height:72px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 26px"><div class="dm-q">2.3</div><div class="dm-t" style="font-size:10.5px">Joint<br>account?</div></div></div>
+
+        <div class="split" style="width:100%">
+          <div class="sl-col spsm" style="margin-top:36px">
+            <div class="hl n"></div>
+            <div class="vc"><div class="vl n" style="height:8px"></div><div class="bt n" style="font-size:7.5px;margin-bottom:2px">NO – Sole</div><div class="vl n" style="height:8px"></div><div class="arr n"></div></div><div class="g4"></div>
+            <div class="stub"><div class="stub-lbl">→ Phase 3</div><div class="stub-sub">Sole account holder</div></div>
+          </div>
+          <div class="sdiv"></div>
+          <div class="sl-col spsm">
+            <div class="vc"><div class="vl y" style="height:8px"></div><div class="bt y" style="font-size:7.5px;margin-bottom:2px">YES – Joint</div><div class="vl y" style="height:8px"></div><div class="arr y"></div></div><div class="g4"></div>
+            <div class="dm" style="width:180px;height:66px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 22px"><div class="dm-q">2.3b</div><div class="dm-t" style="font-size:10px">Separated /<br>separating?</div></div></div>
+            <div class="split" style="width:100%">
+              <div class="sl-col spxs" style="margin-top:33px">
+                <div class="hl y"></div>
+                <div class="vc"><div class="vl y" style="height:6px"></div><div class="bt y" style="font-size:7px;padding:1px 3px;margin-bottom:2px">YES</div><div class="vl y" style="height:6px"></div><div class="arr y"></div></div><div class="g4"></div>
+                <div class="stub"><div class="stub-lbl">→ Phase 3</div><div class="stub-sub">Independent I&amp;E each</div></div>
+              </div>
+              <div class="sdiv"></div>
+              <div class="sl-col spxs">
+                <div class="vc"><div class="vl n" style="height:6px"></div><div class="bt n" style="font-size:7px;padding:1px 3px;margin-bottom:2px">NO</div><div class="vl n" style="height:6px"></div><div class="arr n"></div></div><div class="g4"></div>
+                <div class="stub"><div class="stub-lbl">→ Phase 3</div><div class="stub-sub">Combined I&amp;E both</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /YES arrears -->
+    </div><!-- /2.1 split -->
+  </div>
+</div>
+
+<!-- ══════════════════════
+     TAB 3 – CONTEXT
+     ══════════════════════ -->
+<div class="panel" id="panel-ctx">
+  <div class="pi">
+    <div class="pi-badge" style="background:var(--gold);color:#fff;">Phase 3</div>
+    <div><div class="pi-title">Situation Context</div><div class="pi-desc">Understand the full situation, assess income, determine if I&E is appropriate.</div></div>
+  </div>
+  <div class="flow">
+    <div><span class="pill start">Routing complete</span></div>
+    <div class="vc"><div class="vl" style="height:18px"></div><div class="arr d"></div></div><div class="g4"></div>
+
+    <div class="box ctx" style="max-width:480px">
+      <div class="box-icon">💬</div>
+      <div class="box-type">3.1 – Hardship Reason</div>
+      <div class="box-title">Record primary reason</div>
+      <div class="box-desc">Redundancy / job loss · Reduced income · Illness / medical · Relationship breakdown · Bereavement · Overspending / budgeting · Change in circumstances · Other. Document on system (CONC 7.14).</div>
+    </div>
+    <div class="vc"><div class="vl" style="height:14px"></div><div class="arr d"></div></div><div class="g4"></div>
+
+    <div class="box ctx" style="max-width:480px">
+      <div class="box-icon">🔍</div>
+      <div class="box-type">3.2 – Explore Full Situation</div>
+      <div class="box-title">Confirm before proceeding</div>
+      <div class="box-desc">Timeline (when did difficulty start?) · Temporary or permanent · Other debts / creditors · Dependants / household composition. Document on system.</div>
+    </div>
+    <div class="vc"><div class="vl" style="height:14px"></div><div class="arr d"></div></div><div class="g4"></div>
+
+    <!-- 3.3 BS referral -->
+    <div class="dm" style="width:280px;height:84px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 38px"><div class="dm-q">3.3</div><div class="dm-t" style="font-size:11px">Overwhelmed / multiple<br>creditors / unable to engage?</div></div></div>
+
+    <div class="split" style="width:100%">
+      <div class="sl-col sp" style="margin-top:42px">
+        <div class="hl y"></div>
+        <div class="vc"><div class="vl y" style="height:10px"></div><div class="bt y" style="margin-bottom:3px">YES</div><div class="vl y" style="height:10px"></div><div class="arr y"></div></div><div class="g6"></div>
+        <div class="box bs">
+          <div class="box-icon">🤝</div>
+          <div class="box-type">Refer – Breathing Space</div>
+          <div class="box-title">Refer to StepChange / SCDC</div>
+          <div class="box-desc">Apply standard BS. Pause all collections activity. End arrangement discussion. Note on system.</div>
+        </div>
+      </div>
+      <div class="sdiv"></div>
+      <div class="sl-col sp">
+        <div class="vc"><div class="vl n" style="height:10px"></div><div class="bt n" style="margin-bottom:3px">NO</div><div class="vl n" style="height:10px"></div><div class="arr n"></div></div><div class="g6"></div>
+
+        <!-- 3.4 Income -->
+        <div class="dm" style="width:240px;height:78px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 32px"><div class="dm-q">3.4</div><div class="dm-t" style="font-size:11px">Does customer<br>have income?</div></div></div>
+
+        <div class="split" style="width:100%">
+          <!-- YES income -->
+          <div class="sl-col spxs" style="margin-top:39px">
+            <div class="hl y"></div>
+            <div class="vc"><div class="vl y" style="height:8px"></div><div class="bt y" style="font-size:7.5px;margin-bottom:2px">YES</div><div class="vl y" style="height:8px"></div><div class="arr y"></div></div><div class="g4"></div>
+            <div class="stub"><div class="stub-lbl">→ Phase 4 I&amp;E</div></div>
+          </div>
+          <div class="sdiv"></div>
+          <!-- UNCLEAR -->
+          <div class="sl-col spxs">
+            <div class="vc"><div class="vl" style="height:8px"></div><div class="bt g" style="font-size:7.5px;margin-bottom:2px">UNCLEAR</div><div class="vl" style="height:8px"></div><div class="arr d"></div></div><div class="g4"></div>
+            <div class="box warn">
+              <div class="box-icon">🔎</div>
+              <div class="box-type">Verify</div>
+              <div class="box-title">Cross-check transactions</div>
+              <div class="box-desc">Regular credits / salary / benefits. If confirmed → I&E. If discrepancy → challenge. Resolved → I&E. Refused → document, escalate TL.</div>
+            </div>
+          </div>
+          <div class="sdiv"></div>
+          <!-- NO income -->
+          <div class="sl-col spxs" style="margin-top:39px">
+            <div class="hl n"></div>
+            <div class="vc"><div class="vl n" style="height:8px"></div><div class="bt n" style="font-size:7.5px;margin-bottom:2px">NO</div><div class="vl n" style="height:8px"></div><div class="arr n"></div></div><div class="g4"></div>
+            <div class="dm" style="width:160px;height:62px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 18px"><div class="dm-q">3.4d</div><div class="dm-t" style="font-size:10px">Failed<br>arrangements?</div></div></div>
+            <div class="split" style="width:100%">
+              <div class="sl-col spxs" style="margin-top:31px">
+                <div class="hl n"></div>
+                <div class="vc"><div class="vl n" style="height:6px"></div><div class="bt n" style="font-size:7px;padding:1px 3px;margin-bottom:2px">0–1</div><div class="vl n" style="height:6px"></div><div class="arr n"></div></div><div class="g4"></div>
+                <div class="box ltna" style="font-size:.9em">
+                  <div class="box-icon">🚨</div>
+                  <div class="box-type">LTNA</div>
+                  <div class="box-title">Refer to specialist</div>
+                </div>
+              </div>
+              <div class="sdiv"></div>
+              <div class="sl-col spxs">
+                <div class="vc"><div class="vl n" style="height:6px"></div><div class="bt n" style="font-size:7px;padding:1px 3px;margin-bottom:2px">2+</div><div class="vl n" style="height:6px"></div><div class="arr n"></div></div><div class="g4"></div>
+                <div class="box ltna" style="font-size:.9em">
+                  <div class="box-icon">🚨</div>
+                  <div class="box-type">Auto-flag LTNA</div>
+                  <div class="box-title">No further workout</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /income split -->
+      </div>
+    </div><!-- /3.3 split -->
+  </div>
+</div>
+
+<!-- ══════════════════════
+     TAB 4 – I&E
+     ══════════════════════ -->
+<div class="panel" id="panel-ie">
+  <div class="pi">
+    <div class="pi-badge" style="background:var(--ie);color:#fff;">Phase 4</div>
+    <div><div class="pi-title">I&amp;E Assessment</div><div class="pi-desc">Conduct full I&E on system. Cross-check all figures. Surplus result drives plan selection.</div></div>
+  </div>
+  <div class="flow">
+    <div><span class="pill start">Income confirmed – proceed to I&amp;E</span></div>
+    <div class="vc"><div class="vl" style="height:18px"></div><div class="arr d"></div></div><div class="g4"></div>
+
+    <div class="box ie" style="max-width:480px">
+      <div class="box-icon">📋</div>
+      <div class="box-type">4.1 – Conduct Full I&amp;E</div>
+      <div class="box-title">Complete on system form – document all figures (CONC 7.14)</div>
+      <div class="box-desc">All income sources (salary, benefits, other) · Essential expenditure (housing, utilities, food, transport) · Other debt commitments · Cross-check all figures against transaction history</div>
+    </div>
+    <div class="vc"><div class="vl p" style="height:14px"></div><div class="arr p"></div></div><div class="g4"></div>
+
+    <!-- 4.2 Surplus -->
+    <div class="dm" style="width:270px;height:82px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 36px"><div class="dm-q">4.2 – I&amp;E Result</div><div class="dm-t" style="font-size:11px">Monthly surplus after<br>essential expenditure?</div></div></div>
+
+    <div class="split" style="width:100%">
+
+      <!-- SURPLUS YES -->
+      <div class="sl-col sp" style="margin-top:41px">
+        <div class="hl y"></div>
+        <div class="vc"><div class="vl y" style="height:11px"></div><div class="bt y" style="margin-bottom:3px">YES – surplus</div><div class="vl y" style="height:11px"></div><div class="arr y"></div></div><div class="g8"></div>
+
+        <div class="dm" style="width:230px;height:76px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 28px"><div class="dm-q">4.3</div><div class="dm-t" style="font-size:10.5px">Can customer meet<br>full MCP?</div></div></div>
+
+        <div class="split" style="width:100%">
+          <!-- MCP + extra -->
+          <div class="sl-col spxs" style="margin-top:38px">
+            <div class="hl y"></div>
+            <div class="vc"><div class="vl y" style="height:8px"></div><div class="bt y" style="font-size:7px;padding:1px 3px;margin-bottom:2px">Yes + extra</div><div class="vl y" style="height:8px"></div><div class="arr y"></div></div><div class="g4"></div>
+            <div class="box full">
+              <div class="box-icon">💷</div>
+              <div class="box-type">Full Repayment</div>
+              <div class="box-title">MCP + arrears schedule</div>
+              <div class="box-desc">Review date set.</div>
+            </div>
+          </div>
+          <div class="sdiv"></div>
+          <!-- MCP only -->
+          <div class="sl-col spxs">
+            <div class="vc"><div class="vl" style="height:8px"></div><div class="bt g" style="font-size:7px;padding:1px 3px;margin-bottom:2px">Yes, no extra</div><div class="vl" style="height:8px"></div><div class="arr d"></div></div><div class="g4"></div>
+            <div class="dm" style="width:160px;height:62px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 18px"><div class="dm-q">4.3b</div><div class="dm-t" style="font-size:10px">Prior arrangement<br>met on account?</div></div></div>
+            <div class="split" style="width:100%">
+              <div class="sl-col spxs" style="margin-top:31px">
+                <div class="hl n"></div>
+                <div class="vc"><div class="vl n" style="height:6px"></div><div class="bt n" style="font-size:7px;padding:1px 3px;margin-bottom:2px">NO</div><div class="vl n" style="height:6px"></div><div class="arr n"></div></div><div class="g4"></div>
+                <div class="box reage">
+                  <div class="box-icon">🔁</div>
+                  <div class="box-type">Loan Re-age</div>
+                  <div class="box-title">3 consecutive payments first</div>
+                  <div class="box-desc">Arrears to end of term on completion. Missed payment → re-enter at 4.3.</div>
+                </div>
+              </div>
+              <div class="sdiv"></div>
+              <div class="sl-col spxs">
+                <div class="vc"><div class="vl y" style="height:6px"></div><div class="bt y" style="font-size:7px;padding:1px 3px;margin-bottom:2px">YES</div><div class="vl y" style="height:6px"></div><div class="arr y"></div></div><div class="g4"></div>
+                <div class="dm" style="width:148px;height:58px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 16px"><div class="dm-q">4.3c</div><div class="dm-t" style="font-size:9.5px">Lender approval<br>for cap?</div></div></div>
+                <div class="split" style="width:100%">
+                  <div class="sl-col spxs" style="margin-top:29px">
+                    <div class="hl y"></div>
+                    <div class="vc"><div class="vl y" style="height:5px"></div><div class="bt y" style="font-size:6.5px;padding:1px 3px;margin-bottom:2px">YES</div><div class="vl y" style="height:5px"></div><div class="arr y"></div></div><div class="g4"></div>
+                    <div class="box cap">
+                      <div class="box-icon">📊</div>
+                      <div class="box-type">Capitalisation</div>
+                      <div class="box-title">Arrears added to balance, re-amortised</div>
+                    </div>
+                  </div>
+                  <div class="sdiv"></div>
+                  <div class="sl-col spxs">
+                    <div class="vc"><div class="vl n" style="height:5px"></div><div class="bt n" style="font-size:6.5px;padding:1px 3px;margin-bottom:2px">NO</div><div class="vl n" style="height:5px"></div><div class="arr n"></div></div><div class="g4"></div>
+                    <div class="box reage" style="font-size:.9em">
+                      <div class="box-type">Loan Re-age</div>
+                      <div class="box-title">Fall back to re-age</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sdiv"></div>
+          <!-- Partial -->
+          <div class="sl-col spxs" style="margin-top:38px">
+            <div class="hl n"></div>
+            <div class="vc"><div class="vl n" style="height:8px"></div><div class="bt n" style="font-size:7px;padding:1px 3px;margin-bottom:2px">Partial</div><div class="vl n" style="height:8px"></div><div class="arr n"></div></div><div class="g4"></div>
+            <div class="dm" style="width:160px;height:62px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 18px"><div class="dm-q">4.3d</div><div class="dm-t" style="font-size:10px">Above token<br>threshold?</div></div></div>
+            <div class="split" style="width:100%">
+              <div class="sl-col spxs" style="margin-top:31px">
+                <div class="hl y"></div>
+                <div class="vc"><div class="vl y" style="height:6px"></div><div class="bt y" style="font-size:7px;padding:1px 3px;margin-bottom:2px">YES</div><div class="vl y" style="height:6px"></div><div class="arr y"></div></div><div class="g4"></div>
+                <div class="box red">
+                  <div class="box-icon">📉</div>
+                  <div class="box-type">Reduced Repayment</div>
+                  <div class="box-title">Below MCP, above threshold</div>
+                  <div class="box-desc">Review date ≤3 months mandatory.</div>
+                </div>
+              </div>
+              <div class="sdiv"></div>
+              <div class="sl-col spxs">
+                <div class="vc"><div class="vl n" style="height:6px"></div><div class="bt n" style="font-size:7px;padding:1px 3px;margin-bottom:2px">NO</div><div class="vl n" style="height:6px"></div><div class="arr n"></div></div><div class="g4"></div>
+                <div class="box token">
+                  <div class="box-icon">🪙</div>
+                  <div class="box-type">Token Payment</div>
+                  <div class="box-title">Below token threshold</div>
+                  <div class="box-desc">Review date ≤3 months mandatory.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /4.3 split -->
+      </div><!-- /SURPLUS YES -->
+
+      <div class="sdiv"></div>
+
+      <!-- NO SURPLUS -->
+      <div class="sl-col sp">
+        <div class="vc"><div class="vl n" style="height:11px"></div><div class="bt n" style="margin-bottom:3px">NO – no surplus</div><div class="vl n" style="height:11px"></div><div class="arr n"></div></div><div class="g8"></div>
+
+        <div class="dm" style="width:230px;height:76px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 28px"><div class="dm-q">4.4</div><div class="dm-t" style="font-size:10.5px">Hardship temporary<br>(&lt;6 months)?</div></div></div>
+
+        <div class="split" style="width:100%">
+          <!-- TEMPORARY -->
+          <div class="sl-col spsm" style="margin-top:38px">
+            <div class="hl y"></div>
+            <div class="vc"><div class="vl y" style="height:8px"></div><div class="bt y" style="font-size:7.5px;margin-bottom:2px">YES</div><div class="vl y" style="height:8px"></div><div class="arr y"></div></div><div class="g4"></div>
+            <div class="dm" style="width:180px;height:66px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 22px"><div class="dm-q">4.4b</div><div class="dm-t" style="font-size:10px">BS extension<br>applicable?</div></div></div>
+            <div class="split" style="width:100%">
+              <div class="sl-col spxs" style="margin-top:33px">
+                <div class="hl y"></div>
+                <div class="vc"><div class="vl y" style="height:6px"></div><div class="bt y" style="font-size:7px;padding:1px 3px;margin-bottom:2px">YES</div><div class="vl y" style="height:6px"></div><div class="arr y"></div></div><div class="g4"></div>
+                <div class="box bs">
+                  <div class="box-icon">⏸️</div>
+                  <div class="box-type">BS Extension</div>
+                  <div class="box-title">Apply extension, limited contact</div>
+                </div>
+              </div>
+              <div class="sdiv"></div>
+              <div class="sl-col spxs">
+                <div class="vc"><div class="vl n" style="height:6px"></div><div class="bt n" style="font-size:7px;padding:1px 3px;margin-bottom:2px">NO</div><div class="vl n" style="height:6px"></div><div class="arr n"></div></div><div class="g4"></div>
+                <div class="box brk">
+                  <div class="box-icon">⏸️</div>
+                  <div class="box-type">Payment Break</div>
+                  <div class="box-title">Suspend payments</div>
+                  <div class="box-desc">End date documented. Re-enters Phase 4 on expiry.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- PERMANENT -->
+          <div class="sl-col spsm">
+            <div class="vc"><div class="vl n" style="height:8px"></div><div class="bt n" style="font-size:7.5px;margin-bottom:2px">NO – permanent</div><div class="vl n" style="height:8px"></div><div class="arr n"></div></div><div class="g4"></div>
+            <div class="dm" style="width:180px;height:66px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 22px"><div class="dm-q">4.4d</div><div class="dm-t" style="font-size:10px">Residual<br>capacity?</div></div></div>
+            <div class="split" style="width:100%">
+              <div class="sl-col spxs" style="margin-top:33px">
+                <div class="hl y"></div>
+                <div class="vc"><div class="vl y" style="height:6px"></div><div class="bt y" style="font-size:7px;padding:1px 3px;margin-bottom:2px">Minimal</div><div class="vl y" style="height:6px"></div><div class="arr y"></div></div><div class="g4"></div>
+                <div class="box token">
+                  <div class="box-icon">🪙</div>
+                  <div class="box-type">Token + LTNA Flag</div>
+                  <div class="box-title">Interim token</div>
+                  <div class="box-desc">Flag for specialist. Review ≤3 months.</div>
+                </div>
+              </div>
+              <div class="sdiv"></div>
+              <div class="sl-col spxs">
+                <div class="vc"><div class="vl n" style="height:6px"></div><div class="bt n" style="font-size:7px;padding:1px 3px;margin-bottom:2px">None</div><div class="vl n" style="height:6px"></div><div class="arr n"></div></div><div class="g4"></div>
+                <div class="dm" style="width:148px;height:58px"><div class="dm-b"></div><div class="dm-f"></div><div class="dm-c" style="padding:0 16px"><div class="dm-q">4.4e</div><div class="dm-t" style="font-size:9.5px">Failed<br>arrangements?</div></div></div>
+                <div class="split" style="width:100%">
+                  <div class="sl-col spxs" style="margin-top:29px">
+                    <div class="hl n"></div>
+                    <div class="vc"><div class="vl n" style="height:5px"></div><div class="bt n" style="font-size:6.5px;padding:1px 3px;margin-bottom:2px">0–1</div><div class="vl n" style="height:5px"></div><div class="arr n"></div></div><div class="g4"></div>
+                    <div class="box ltna" style="font-size:.9em">
+                      <div class="box-icon">🚨</div>
+                      <div class="box-type">LTNA</div>
+                      <div class="box-title">Refer to specialist</div>
+                    </div>
+                  </div>
+                  <div class="sdiv"></div>
+                  <div class="sl-col spxs">
+                    <div class="vc"><div class="vl n" style="height:5px"></div><div class="bt n" style="font-size:6.5px;padding:1px 3px;margin-bottom:2px">2+</div><div class="vl n" style="height:5px"></div><div class="arr n"></div></div><div class="g4"></div>
+                    <div class="box ltna" style="font-size:.9em">
+                      <div class="box-icon">🚨</div>
+                      <div class="box-type">Auto-flag LTNA</div>
+                      <div class="box-title">No further workout</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div><!-- /4.4 split -->
+      </div><!-- /NO SURPLUS -->
+    </div><!-- /4.2 split -->
+
+    <div class="note">⚠ Token payment threshold ≈ 10–20% of MCP – verify exact figure against current policy. Token and reduced arrangements: mandatory review date ≤3 months. Re-age: missed payment during 3-month period → account re-enters at step 4.3.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════
+     TAB 5 – PLANS
+     ══════════════════════ -->
+<div class="panel" id="panel-plans">
+  <div class="pi">
+    <div class="pi-badge" style="background:#1a5c33;color:#fff;">Plans</div>
+    <div><div class="pi-title">Repayment Plan Outcomes</div><div class="pi-desc">All terminal plan outcomes. Determined by surplus level, MCP capacity, and hardship duration.</div></div>
+  </div>
+
+  <div class="sl" style="margin-bottom:16px;">Surplus present</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:32px;">
+    <div class="box full"><div class="box-icon">💷</div><div class="box-type">Full Repayment</div><div class="box-title">MCP + arrears schedule</div><div class="box-desc">Surplus covers full MCP and extra toward arrears. Review date set.</div></div>
+    <div class="box reage"><div class="box-icon">🔁</div><div class="box-type">Loan Re-age</div><div class="box-title">3 consecutive payments first</div><div class="box-desc">Meets MCP, no extra. No prior arrangement. 3 on-time payments → arrears to end of term. Missed payment → re-enter 4.3.</div></div>
+    <div class="box cap"><div class="box-icon">📊</div><div class="box-type">Capitalisation</div><div class="box-title">Arrears added to balance</div><div class="box-desc">Prior arrangement met + lender approval confirmed. Arrears re-amortised into balance.</div></div>
+    <div class="box red"><div class="box-icon">📉</div><div class="box-type">Reduced Repayment</div><div class="box-title">Below MCP, above token threshold</div><div class="box-desc">Agreed reduced payment. Mandatory review date ≤3 months.</div></div>
+    <div class="box token"><div class="box-icon">🪙</div><div class="box-type">Token Payment</div><div class="box-title">Below token threshold</div><div class="box-desc">Nominal payment demonstrates intent. Mandatory review date ≤3 months. Verify threshold against policy.</div></div>
+  </div>
+
+  <div class="sl" style="margin-bottom:16px;">No surplus – temporary</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:32px;">
+    <div class="box brk"><div class="box-icon">⏸️</div><div class="box-type">Payment Break</div><div class="box-title">Suspend payments (&lt;6 months)</div><div class="box-desc">End date documented. At expiry: capitalise or agree repayment plan. Re-enters Phase 4.</div></div>
+    <div class="box bs"><div class="box-icon">⏸️</div><div class="box-type">BS Extension</div><div class="box-title">Breathing Space extension applicable</div><div class="box-desc">Limited contact rules apply. Do not pressure arrangements.</div></div>
+  </div>
+
+  <div class="sl" style="margin-bottom:16px;">No surplus – permanent</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:32px;">
+    <div class="box token"><div class="box-icon">🪙</div><div class="box-type">Token + LTNA Flag</div><div class="box-title">Minimal residual capacity</div><div class="box-desc">Interim token payment. Account flagged for specialist LTNA review. Review date ≤3 months.</div></div>
+    <div class="box ltna"><div class="box-icon">🚨</div><div class="box-type">LTNA Referral</div><div class="box-title">No capacity – 0 or 1 failed arr.</div><div class="box-desc">Refer to LTNA specialist. May approve: token/reduced, Default as Solution (TL sign-off + CONC 7.3), or enforcement.</div></div>
+    <div class="box ltna"><div class="box-icon">🚨</div><div class="box-type">LTNA Auto-Flag</div><div class="box-title">2+ failed arrangements</div><div class="box-desc">Auto-flag LTNA. No further workout without specialist clearance.</div></div>
+  </div>
+
+  <div class="sl" style="margin-bottom:16px;">Hard stops (pre-plan)</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+    <div class="box stop"><div class="box-icon">📵</div><div class="box-type">End Call – No Customer</div><div class="box-title">Outbound, customer not available</div><div class="box-desc">No details disclosed. Arrange callback.</div></div>
+    <div class="box stop"><div class="box-icon">🚫</div><div class="box-type">Hard Stop – No Authority</div><div class="box-title">Third party, no LOA/PoA on file</div><div class="box-desc">Cannot proceed. Advise to establish authority first.</div></div>
+    <div class="box stop"><div class="box-icon">🚫</div><div class="box-type">Hard Stop – Verify Fail</div><div class="box-title">DOB/postcode/security fail</div><div class="box-desc">End call immediately. No explanation. Document attempt.</div></div>
+    <div class="box stop"><div class="box-icon">🤝</div><div class="box-type">Route to 3PDM</div><div class="box-title">DMC tag on account</div><div class="box-desc">No direct arrangements. 3PDM department owns the account.</div></div>
+    <div class="box stop"><div class="box-icon">⚖️</div><div class="box-type">Hard Stop – Legal</div><div class="box-title">Litigation / legal hold active</div><div class="box-desc">Transfer to Legal. No account discussion.</div></div>
+    <div class="box stop"><div class="box-icon">🔄</div><div class="box-type">Transfer Out</div><div class="box-title">Wrong team</div><div class="box-desc">Warm transfer to correct department.</div></div>
+    <div class="box stop"><div class="box-icon">📋</div><div class="box-type">Mortgage Solutions</div><div class="box-title">Agreement options, no difficulty</div><div class="box-desc">Transfer to specialist team.</div></div>
+    <div class="box stop"><div class="box-icon">🤝</div><div class="box-type">Breathing Space – Standard</div><div class="box-title">Refer StepChange / SCDC</div><div class="box-desc">Pause collections. End arrangement discussion.</div></div>
+    <div class="box stop"><div class="box-icon">🔴</div><div class="box-type">TL Escalation</div><div class="box-title">2+ broken arrangements</div><div class="box-desc">No arrangement without TL sign-off.</div></div>
+  </div>
+  <div class="note" style="margin-top:16px;">Joint accounts – Separated: independent I&E per holder, discuss separately. Together: combined I&E, both holders ideally present. FCA CONC 7.14: document every decision node.</div>
+</div>
+
+<!-- ══════════════════════
+     TAB 6 – ALL OUTCOMES
+     ══════════════════════ -->
+<div class="panel" id="panel-all">
+  <div class="pi">
+    <div class="pi-badge" style="background:var(--muted);color:#fff;">Reference</div>
+    <div><div class="pi-title">All Outcomes</div><div class="pi-desc">Quick reference for every terminal outcome across all four phases.</div></div>
+  </div>
+  <div class="og">
+    <div class="oc"><div class="oc-icon">📵</div><div class="oc-phase">Pre-call 1.2</div><div class="oc-title">Outbound – no customer</div><div class="oc-desc">End call, no details, arrange callback.</div></div>
+    <div class="oc"><div class="oc-icon">🚫</div><div class="oc-phase">Pre-call 1.2b</div><div class="oc-title">No authority on file</div><div class="oc-desc">Cannot proceed. Advise to establish LOA/PoA.</div></div>
+    <div class="oc"><div class="oc-icon">🚫</div><div class="oc-phase">Pre-call 1.3</div><div class="oc-title">Verification failed</div><div class="oc-desc">End call immediately. No explanation. Document.</div></div>
+    <div class="oc"><div class="oc-icon">🤝</div><div class="oc-phase">Pre-call 1.4</div><div class="oc-title">DMC tag – route to 3PDM</div><div class="oc-desc">3PDM department owns account. No direct arrangements.</div></div>
+    <div class="oc"><div class="oc-icon">⚖️</div><div class="oc-phase">Pre-call 1.4</div><div class="oc-title">Litigation – transfer Legal</div><div class="oc-desc">No account discussion or arrangements.</div></div>
+    <div class="oc"><div class="oc-icon">⏸️</div><div class="oc-phase">Pre-call 1.4</div><div class="oc-title">BS active – limited contact</div><div class="oc-desc">Note and continue. BS rules apply throughout.</div></div>
+    <div class="oc"><div class="oc-icon">🔴</div><div class="oc-phase">Pre-call 1.6</div><div class="oc-title">2+ broken – TL escalation</div><div class="oc-desc">No arrangement without TL sign-off.</div></div>
+    <div class="oc"><div class="oc-icon">🔄</div><div class="oc-phase">Routing 2.1</div><div class="oc-title">Transfer out – wrong team</div><div class="oc-desc">Warm transfer to correct department.</div></div>
+    <div class="oc"><div class="oc-icon">📋</div><div class="oc-phase">Routing 2.1</div><div class="oc-title">Mortgage Solutions transfer</div><div class="oc-desc">Agreement options only, no broader difficulty.</div></div>
+    <div class="oc"><div class="oc-icon">🤝</div><div class="oc-phase">Context 3.3</div><div class="oc-title">Breathing Space – StepChange</div><div class="oc-desc">Pause collections. End arrangement discussion.</div></div>
+    <div class="oc"><div class="oc-icon">⚠️</div><div class="oc-phase">Context 3.4</div><div class="oc-title">Income refused / discrepancy</div><div class="oc-desc">Document, issue arrears notice, escalate TL.</div></div>
+    <div class="oc"><div class="oc-icon">🚨</div><div class="oc-phase">Context 3.4d</div><div class="oc-title">LTNA – no income</div><div class="oc-desc">Refer to specialist or auto-flag if 2+ failed.</div></div>
+    <div class="oc"><div class="oc-icon">💷</div><div class="oc-phase">I&E 4.3</div><div class="oc-title">Full repayment</div><div class="oc-desc">MCP + arrears schedule. Review date set.</div></div>
+    <div class="oc"><div class="oc-icon">🔁</div><div class="oc-phase">I&E 4.3b</div><div class="oc-title">Loan re-age</div><div class="oc-desc">3 consecutive payments → arrears to end of term.</div></div>
+    <div class="oc"><div class="oc-icon">📊</div><div class="oc-phase">I&E 4.3c</div><div class="oc-title">Capitalisation</div><div class="oc-desc">Prior arrangement met + lender approval.</div></div>
+    <div class="oc"><div class="oc-icon">📉</div><div class="oc-phase">I&E 4.3d</div><div class="oc-title">Reduced repayment</div><div class="oc-desc">Below MCP, above token. Review ≤3 months.</div></div>
+    <div class="oc"><div class="oc-icon">🪙</div><div class="oc-phase">I&E 4.3d</div><div class="oc-title">Token payment</div><div class="oc-desc">Below threshold. Review ≤3 months.</div></div>
+    <div class="oc"><div class="oc-icon">⏸️</div><div class="oc-phase">I&E 4.4b</div><div class="oc-title">Payment break</div><div class="oc-desc">Temporary, &lt;6 months. Re-enters Phase 4 on expiry.</div></div>
+    <div class="oc"><div class="oc-icon">⏸️</div><div class="oc-phase">I&E 4.4b</div><div class="oc-title">BS extension applied</div><div class="oc-desc">Limited contact. Do not pressure arrangements.</div></div>
+    <div class="oc"><div class="oc-icon">🪙</div><div class="oc-phase">I&E 4.4d</div><div class="oc-title">Token + LTNA flag</div><div class="oc-desc">Interim token. Specialist review required.</div></div>
+    <div class="oc"><div class="oc-icon">🚨</div><div class="oc-phase">I&E 4.4e</div><div class="oc-title">LTNA referral</div><div class="oc-desc">No capacity. Specialist team. May escalate to Default as Solution.</div></div>
+    <div class="oc"><div class="oc-icon">🚨</div><div class="oc-phase">I&E 4.4e</div><div class="oc-title">LTNA auto-flag</div><div class="oc-desc">2+ failed arrangements. No further workout.</div></div>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<div class="foot">
+  <div class="fl"><b>Myles Chuatico</b> · HSBC Change Management · 2024</div>
+  <a href="mortgage-decision-tool.html" class="flink">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    Open interactive tool
+  </a>
+</div>
+
+<script>
+function sw(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.getElementById('tab-'+id).classList.add('on');
+  document.getElementById('panel-'+id).classList.add('on');
+}
+</script>
+</body>
+</html>

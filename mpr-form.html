@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mission Payment Request — ServiceDesk Pro</title>
+<title>Mission Payment Request, ServiceDesk Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -609,7 +609,7 @@
   <div class="form-card">
     <div class="form-card-header">
       <div class="form-card-title">Manual MPR Service Item</div>
-      <div class="form-card-sub">Treasury Services · Submit a Mission Payment Request for Chief of Mission approval</div>
+      <div class="form-card-sub">Treasury Services · Submit a Mission Payment Request for Chief of Mission review and approval</div>
     </div>
 
     <!-- FORM -->
@@ -648,20 +648,20 @@
           <div class="field">
             <label>Mission / Office <span class="required">*</span></label>
             <select id="missionField">
-              <option value="">— Select Mission —</option>
-              <option>Mission Alpha — Europe</option>
-              <option>Mission Bravo — Asia Pacific</option>
-              <option>Mission Charlie — Americas</option>
-              <option>Mission Delta — Africa</option>
-              <option>Mission Echo — Middle East</option>
-              <option>Regional Office — Manila</option>
+              <option value="">- Select Mission -</option>
+              <option>Mission Alpha, Europe</option>
+              <option>Mission Bravo, Asia Pacific</option>
+              <option>Mission Charlie, Americas</option>
+              <option>Mission Delta, Africa</option>
+              <option>Mission Echo, Middle East</option>
+              <option>Regional Office, Manila</option>
               <option>Headquarters</option>
             </select>
           </div>
           <div class="field">
             <label>Requesting Unit <span class="required">*</span></label>
             <select>
-              <option value="">— Select Unit —</option>
+              <option value="">- Select Unit -</option>
               <option>Finance</option>
               <option>Administration</option>
               <option>Programme</option>
@@ -690,7 +690,7 @@
             <label>MPR Type <span class="required">*</span></label>
             <div class="field-hint">Select the type of payment request. Additional fields will appear based on your selection.</div>
             <select id="mprType" onchange="handleMprType()">
-              <option value="">— Select MPR Type —</option>
+              <option value="">- Select MPR Type -</option>
               <option value="standard">Standard Payment Request</option>
               <option value="advance">Cash Advance Request</option>
               <option value="reimbursement">Reimbursement Request</option>
@@ -724,7 +724,7 @@
             <div class="field">
               <label>Payment Currency <span class="required">*</span></label>
               <select>
-                <option value="">— Select —</option>
+                <option value="">- Select -</option>
                 <option>USD</option><option>EUR</option><option>GBP</option>
                 <option>PHP</option><option>KES</option><option>NGN</option><option>Other</option>
               </select>
@@ -732,7 +732,7 @@
             <div class="field">
               <label>Payment Method <span class="required">*</span></label>
               <select>
-                <option value="">— Select —</option>
+                <option value="">- Select -</option>
                 <option>Bank Transfer</option>
                 <option>Cheque</option>
                 <option>Mobile Money</option>
@@ -747,7 +747,7 @@
             <div class="field">
               <label>Purpose of Advance <span class="required">*</span></label>
               <select>
-                <option value="">— Select —</option>
+                <option value="">- Select -</option>
                 <option>Field Mission Expenses</option>
                 <option>Travel & Accommodation</option>
                 <option>Operational Supplies</option>
@@ -774,7 +774,7 @@
             <div class="field">
               <label>Expense Category <span class="required">*</span></label>
               <select>
-                <option value="">— Select —</option>
+                <option value="">- Select -</option>
                 <option>Travel Expenses</option>
                 <option>Office Supplies</option>
                 <option>Medical Expenses</option>
@@ -809,7 +809,7 @@
           <div class="field">
             <label>Original Currency <span class="required">*</span></label>
             <select id="currencySelect" onchange="checkCompliance()">
-              <option value="">— Select —</option>
+              <option value="">- Select -</option>
               <option value="USD">USD</option>
               <option value="EUR">EUR</option>
               <option value="GBP">GBP</option>
@@ -827,24 +827,24 @@
         <div class="form-row">
           <div class="field">
             <label>Does this payment exceed USD 3,000? <span class="required">*</span></label>
-            <div class="field-hint">This must accurately reflect the USD equivalent amount above. Misrepresentation will prevent submission.</div>
+            <div class="field-hint">This must match the USD equivalent amount above. Misrepresentation will block submission.</div>
             <select id="exceedsThreshold" onchange="checkCompliance()">
-              <option value="">— Select —</option>
-              <option value="yes">Yes — amount exceeds USD 3,000</option>
-              <option value="no">No — amount is USD 3,000 or below</option>
+              <option value="">- Select -</option>
+              <option value="yes">Yes, amount exceeds USD 3,000</option>
+              <option value="no">No, amount is USD 3,000 or below</option>
             </select>
           </div>
         </div>
 
         <!-- Compliance warning/error -->
         <div class="compliance-block" id="complianceWarning">
-          <div class="compliance-title">⚠ High-Value Payment — Additional Approval Required</div>
-          <div class="compliance-text">Payments exceeding USD 3,000 require Chief of Mission approval and will be routed to the Senior Finance Agent for processing. Ensure all supporting documentation is attached before submission.</div>
+          <div class="compliance-title">⚠ High-Value Payment, Additional Approval Required</div>
+          <div class="compliance-text">Payments over USD 3,000 require Chief of Mission approval and go to the Senior Finance Agent for processing. Attach all supporting documentation before submitting.</div>
         </div>
 
         <div class="compliance-block compliance-error" id="complianceError">
-          <div class="compliance-title">🚫 Compliance Mismatch — Cannot Submit</div>
-          <div class="compliance-text">The USD equivalent amount you entered exceeds USD 3,000, but you selected "No" on the threshold question. Please correct your selection to proceed. This validation prevents non-compliant submissions.</div>
+          <div class="compliance-title">🚫 Compliance Mismatch, Cannot Submit</div>
+          <div class="compliance-text">The USD equivalent amount exceeds USD 3,000, but you selected No on the threshold question. Correct your selection to proceed.</div>
         </div>
 
       </div>
@@ -861,7 +861,7 @@
         <div class="form-row">
           <div class="field">
             <label>Purpose / Justification <span class="required">*</span></label>
-            <div class="field-hint">Provide a clear description of the purpose of this payment and its operational necessity.</div>
+            <div class="field-hint">Describe the purpose of this payment and its operational basis.</div>
             <textarea placeholder="Describe the purpose of this payment request and its connection to operational requirements..."></textarea>
           </div>
         </div>
@@ -887,26 +887,26 @@
     <div class="success-overlay" id="successOverlay">
       <div class="success-icon">✅</div>
       <div class="success-title">Request Submitted Successfully</div>
-      <div class="success-body">Your Mission Payment Request has been submitted and a ticket has been created. The Chief of Mission has been notified via email and will review your request.</div>
+      <div class="success-body">Your Mission Payment Request has been submitted and a ticket has been created. The Chief of Mission has been notified and will review your request.</div>
       <div class="ticket-ref">TICKET #TSY-2026-00847</div>
 
       <div class="workflow-trace">
         <div class="workflow-trace-title">What happens next</div>
         <div class="trace-item">
           <div class="trace-dot" style="background:#107c10"></div>
-          <div><strong>Ticket created</strong> — assigned to TSY queue based on MPR type selection</div>
+          <div><strong>Ticket created</strong>, assigned to TSY queue based on MPR type selection</div>
         </div>
         <div class="trace-item">
           <div class="trace-dot" style="background:#0078d4"></div>
-          <div><strong>Chief of Mission notified</strong> — approval request email sent automatically via Outlook</div>
+          <div><strong>Chief of Mission notified</strong>, approval request email sent automatically via Outlook</div>
         </div>
         <div class="trace-item">
           <div class="trace-dot" style="background:#0078d4"></div>
-          <div><strong>If approved</strong> — confirmation email sent to requester; ticket auto-assigned to the correct finance agent based on MPR type and mission</div>
+          <div><strong>If approved</strong>, confirmation email sent to requester; ticket auto-assigned to the correct finance agent based on MPR type and mission</div>
         </div>
         <div class="trace-item">
           <div class="trace-dot" style="background:#d83b01"></div>
-          <div><strong>If declined</strong> — decline email sent via Outlook with reason and comments from Chief of Mission</div>
+          <div><strong>If declined</strong>, decline email sent via Outlook with reason and comments from Chief of Mission</div>
         </div>
       </div>
 
@@ -961,11 +961,11 @@
       <div style="font-size:11px;color:var(--muted);line-height:1.7;">
         Because Freshservice does not natively transfer form inputs to ticket fields, a suite of workflow automators was built to handle this gap:
         <br><br>
-        <strong style="color:var(--text)">· Category & subcategory</strong> — set from MPR type<br>
-        <strong style="color:var(--text)">· BA code</strong> — routed from mission selection<br>
-        <strong style="color:var(--text)">· Finance unit</strong> — assigned based on agent group<br>
-        <strong style="color:var(--text)">· Agent group</strong> — auto-assigned on approval<br>
-        <strong style="color:var(--text)">· Threshold routing</strong> — >USD 3,000 escalates to Senior Agent<br>
+        <strong style="color:var(--text)">· Category & subcategory</strong>, set from MPR type<br>
+        <strong style="color:var(--text)">· BA code</strong>, routed from mission selection<br>
+        <strong style="color:var(--text)">· Finance unit</strong>, assigned based on agent group<br>
+        <strong style="color:var(--text)">· Agent group</strong>, auto-assigned on approval<br>
+        <strong style="color:var(--text)">· Threshold routing</strong>, >USD 3,000 escalates to Senior Agent<br>
         <br>
         No manual data re-entry required despite manual form submission.
       </div>
@@ -973,7 +973,7 @@
 
     <div class="portfolio-badge">
       <strong>⚠ Portfolio Sample</strong>
-      Sanitized demo of the Manual MPR Service Item built for a UN agency treasury workflow. The form is the front end — a surrounding automation suite (category, BA code, team assignment, agent routing) handles data transfer that Freshservice does not do natively from form inputs. Org-specific details replaced with generic equivalents.
+      Sanitized demo of the Manual MPR Service Item built for a UN agency treasury workflow. The form is the front end, a surrounding automation suite (category, BA code, team assignment, agent routing) handles data transfer that Freshservice does not do natively from form inputs. Org-specific details replaced with generic equivalents.
     </div>
 
   </div>
