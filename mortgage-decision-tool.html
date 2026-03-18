@@ -879,7 +879,7 @@ function s1_2_thirdparty() {
   const callType = S['s1_1'];
   S['s1_2'] = 'third_party';
   hist.push({phase:curPhase, step:curStep, S:{...S}, vuln:[...vuln], reason, ieCtx});
-  updateBack();
+  updateUI();
   if (callType === 'outbound') {
     showStep('s1_2b_avail');
   } else {

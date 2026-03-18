@@ -4,405 +4,213 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>How I Work | Myles Chuatico</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --navy: #0f2744;
-    --navy-mid: #1a3a5c;
-    --accent: #c8a96e;
-    --accent-light: #e8d5a8;
-    --off-white: #f7f4ef;
-    --text: #1a1a1a;
-    --muted: #6b7280;
-    --border: #e2ddd5;
-    --white: #ffffff;
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --text-primary: #111111;
+    --text-secondary: #555555;
+    --text-tertiary: #888888;
+    --border: #e8e8e8;
+    --border-hover: #d0d0d0;
+    --accent: #5046e5;
+    --accent-light: #ededfc;
+    --accent-text: #4038c7;
+    --warm-bg: #f5f3f0;
+    --radius: 12px;
+    --radius-lg: 20px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    --sans: 'Instrument Sans', -apple-system, sans-serif;
+    --serif: 'Newsreader', Georgia, serif;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--off-white);
-    color: var(--text);
-    overflow-x: hidden;
-  }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text-primary); -webkit-font-smoothing: antialiased; }
 
   /* ── NAV ── */
   nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
-    padding: 20px 48px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: rgba(247,244,239,0.92);
-    backdrop-filter: blur(12px);
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 0 48px; height: 64px;
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(250,250,250,0.85); backdrop-filter: blur(16px) saturate(180%);
     border-bottom: 1px solid var(--border);
   }
-
-  .nav-logo {
-    font-family: 'DM Serif Display', serif;
-    font-size: 18px;
-    color: var(--navy);
-    text-decoration: none;
-  }
-
-  .nav-links { display: flex; gap: 36px; list-style: none; }
-
-  .nav-links a {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--muted);
-    text-decoration: none;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    transition: color 0.2s;
-  }
-
-  .nav-links a:hover, .nav-links a.active { color: var(--navy); }
+  .nav-name { font-weight: 600; font-size: 15px; color: var(--text-primary); text-decoration: none; }
+  .nav-links { display: flex; gap: 32px; list-style: none; }
+  .nav-links a { font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none; transition: color 0.15s; }
+  .nav-links a:hover, .nav-links a.active { color: var(--text-primary); }
 
   /* ── HERO ── */
   .hero {
-    padding: 140px 48px 80px;
-    max-width: 860px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 80px;
-    align-items: center;
+    padding: 160px 48px 80px;
+    max-width: 860px; margin: 0 auto;
+    display: grid; grid-template-columns: 1.2fr 1fr; gap: 64px; align-items: center;
   }
 
   .hero-eyebrow {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 20px;
-    opacity: 0;
-    animation: slideUp 0.7s ease 0.1s forwards;
+    font-size: 13px; font-weight: 600; color: var(--accent-text); margin-bottom: 16px;
+    opacity: 0; animation: fadeUp 0.6s ease 0.1s forwards;
   }
 
   .hero-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: clamp(36px, 5vw, 56px);
-    line-height: 1.05;
-    color: var(--navy);
-    margin-bottom: 24px;
-    opacity: 0;
-    animation: slideUp 0.7s ease 0.25s forwards;
+    font-family: var(--serif);
+    font-size: clamp(36px, 5vw, 56px); font-weight: 400;
+    line-height: 1.08; letter-spacing: -1px; color: var(--text-primary);
+    margin-bottom: 24px; opacity: 0; animation: fadeUp 0.6s ease 0.2s forwards;
   }
 
-  .hero-title em {
-    font-style: italic;
-    color: var(--accent);
-  }
+  .hero-title em { font-style: italic; color: var(--accent); }
 
   .hero-body {
-    font-size: 16px;
-    font-weight: 300;
-    color: #444;
-    line-height: 1.9;
-    opacity: 0;
-    animation: slideUp 0.7s ease 0.4s forwards;
+    font-size: 16px; color: var(--text-secondary); line-height: 1.8;
+    opacity: 0; animation: fadeUp 0.6s ease 0.35s forwards;
   }
 
-  .hero-aside {
-    opacity: 0;
-    animation: slideUp 0.7s ease 0.5s forwards;
-  }
+  .hero-aside { opacity: 0; animation: fadeUp 0.6s ease 0.45s forwards; }
 
   .pull-quote {
     border-left: 3px solid var(--accent);
-    padding: 20px 24px;
-    background: var(--white);
-    border-radius: 0 8px 8px 0;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    padding: 20px 24px; background: var(--surface);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    box-shadow: var(--shadow-md);
   }
 
   .pull-quote p {
-    font-family: 'DM Serif Display', serif;
-    font-size: 20px;
-    font-style: italic;
-    color: var(--navy);
-    line-height: 1.5;
-    margin-bottom: 12px;
+    font-family: var(--serif); font-size: 19px; font-style: italic;
+    color: var(--text-primary); line-height: 1.5; margin-bottom: 12px;
   }
 
-  .pull-quote cite {
-    font-size: 12px;
-    color: var(--muted);
-    font-style: normal;
-    letter-spacing: 0.5px;
-  }
+  .pull-quote cite { font-size: 13px; color: var(--text-tertiary); font-style: normal; }
 
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
   /* ── DIVIDER ── */
-  .divider {
-    max-width: 860px;
-    margin: 0 auto;
-    height: 1px;
-    background: var(--border);
+  .divider { max-width: 860px; margin: 0 auto; height: 1px; background: var(--border); }
+
+  /* ── SECTIONS ── */
+  .section-eyebrow { font-size: 13px; font-weight: 600; color: var(--accent-text); margin-bottom: 12px; }
+
+  .section-heading {
+    font-family: var(--serif); font-size: clamp(28px, 3.5vw, 40px); font-weight: 400;
+    color: var(--text-primary); line-height: 1.15; letter-spacing: -0.5px; margin-bottom: 48px;
   }
 
   /* ── PRINCIPLES ── */
-  .principles {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 80px 48px;
-  }
+  .principles { max-width: 860px; margin: 0 auto; padding: 80px 48px; }
 
-  .section-eyebrow {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 16px;
-  }
-
-  .section-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: clamp(28px, 4vw, 40px);
-    color: var(--navy);
-    line-height: 1.1;
-    margin-bottom: 48px;
-  }
-
-  .principles-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
+  .principles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
   .principle-card {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 28px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 28px;
+    transition: all 0.25s;
   }
 
-  .principle-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.08);
-  }
-
-  .principle-card.wide {
-    grid-column: span 2;
-  }
+  .principle-card:hover { border-color: var(--border-hover); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .principle-card.wide { grid-column: span 2; }
 
   .principle-number {
-    font-family: 'DM Serif Display', serif;
-    font-size: 40px;
-    color: var(--accent-light);
-    line-height: 1;
-    margin-bottom: 12px;
+    font-family: var(--serif); font-size: 36px;
+    color: var(--accent-light); line-height: 1; margin-bottom: 12px;
+    /* make the number more visible */
+    background: var(--accent-light); -webkit-background-clip: text; color: var(--accent);
+    opacity: 0.3;
   }
 
-  .principle-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--navy);
-    margin-bottom: 10px;
-  }
+  .principle-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; }
 
-  .principle-body {
-    font-size: 14px;
-    font-weight: 300;
-    color: #444;
-    line-height: 1.9;
-  }
+  .principle-body { font-size: 14px; color: var(--text-secondary); line-height: 1.8; }
+  .principle-body strong { font-weight: 600; color: var(--text-primary); }
 
-  .principle-body strong {
-    font-weight: 600;
-    color: var(--navy);
-  }
+  /* ── TRAITS ── */
+  .traits-section { background: var(--warm-bg); padding: 80px 48px; }
+  .traits-inner { max-width: 860px; margin: 0 auto; }
 
-  /* ── DARK BAND ── */
-  .dark-band {
-    background: var(--navy);
-    padding: 80px 48px;
-  }
-
-  .dark-band-inner {
-    max-width: 860px;
-    margin: 0 auto;
-  }
-
-  .dark-band .section-eyebrow { color: var(--accent); }
-  .dark-band .section-title { color: #fff; margin-bottom: 40px; }
-
-  .traits-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
+  .traits-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 
   .trait-card {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 6px;
-    padding: 20px;
-    transition: background 0.2s, border-color 0.2s;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 24px;
+    transition: all 0.25s;
   }
 
-  .trait-card:hover {
-    background: rgba(255,255,255,0.09);
-    border-color: rgba(200,169,110,0.4);
-  }
+  .trait-card:hover { border-color: var(--border-hover); box-shadow: var(--shadow-md); }
 
-  .trait-icon { font-size: 24px; margin-bottom: 10px; }
-
-  .trait-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #fff;
-    margin-bottom: 6px;
-  }
-
-  .trait-body {
-    font-size: 12px;
-    color: rgba(255,255,255,0.55);
-    line-height: 1.7;
-    font-weight: 300;
-  }
+  .trait-icon { font-size: 22px; margin-bottom: 12px; }
+  .trait-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+  .trait-body { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
 
   /* ── APPROACH ── */
-  .approach {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 80px 48px;
-  }
+  .approach { max-width: 860px; margin: 0 auto; padding: 80px 48px; }
 
-  .approach-flow {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    position: relative;
-  }
+  .approach-flow { display: flex; flex-direction: column; position: relative; }
 
   .approach-flow::before {
-    content: '';
-    position: absolute;
-    left: 19px;
-    top: 24px;
-    bottom: 24px;
-    width: 2px;
-    background: var(--border);
+    content: ''; position: absolute; left: 19px; top: 24px; bottom: 24px;
+    width: 2px; background: var(--border);
   }
 
-  .approach-step {
-    display: flex;
-    gap: 24px;
-    align-items: flex-start;
-    padding: 20px 0;
-    position: relative;
-  }
+  .approach-step { display: flex; gap: 24px; align-items: flex-start; padding: 20px 0; position: relative; }
 
   .step-circle {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--navy);
-    color: #fff;
-    font-family: 'DM Serif Display', serif;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--text-primary); color: #fff;
+    font-family: var(--serif); font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; position: relative; z-index: 1;
   }
 
   .step-content { padding-top: 8px; }
-
-  .step-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--navy);
-    margin-bottom: 6px;
-  }
-
-  .step-body {
-    font-size: 14px;
-    font-weight: 300;
-    color: #555;
-    line-height: 1.8;
-  }
+  .step-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+  .step-body { font-size: 14px; color: var(--text-secondary); line-height: 1.8; }
 
   /* ── CTA ── */
   .cta-band {
-    background: var(--accent);
-    padding: 60px 48px;
-    text-align: center;
+    background: var(--accent-light); padding: 64px 48px; text-align: center;
   }
 
   .cta-band h2 {
-    font-family: 'DM Serif Display', serif;
-    font-size: 32px;
-    color: var(--navy);
-    margin-bottom: 12px;
+    font-family: var(--serif); font-size: 28px; font-weight: 400;
+    color: var(--text-primary); margin-bottom: 12px; letter-spacing: -0.3px;
   }
 
-  .cta-band p {
-    font-size: 15px;
-    color: rgba(15,39,68,0.75);
-    margin-bottom: 28px;
-    font-weight: 300;
-  }
+  .cta-band p { font-size: 15px; color: var(--text-secondary); margin-bottom: 28px; }
 
   .cta-btn {
-    display: inline-block;
-    background: var(--navy);
-    color: #fff;
-    padding: 14px 32px;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: background 0.2s;
+    display: inline-block; background: var(--text-primary); color: #fff;
+    padding: 12px 28px; border-radius: 10px; font-size: 14px; font-weight: 600;
+    text-decoration: none; transition: all 0.2s;
   }
 
-  .cta-btn:hover { background: #163d61; }
+  .cta-btn:hover { background: #333; transform: translateY(-1px); box-shadow: var(--shadow-md); }
 
-  /* ── FOOTER ── */
-  footer {
-    background: var(--navy);
-    color: rgba(255,255,255,0.4);
-    text-align: center;
-    padding: 28px;
-    font-size: 12px;
-  }
+  footer { border-top: 1px solid var(--border); text-align: center; padding: 24px; font-size: 13px; color: var(--text-tertiary); }
 
   @media (max-width: 768px) {
-    nav { padding: 16px 24px; }
-    .nav-links { gap: 20px; }
-    .hero { grid-template-columns: 1fr; gap: 40px; padding: 120px 24px 60px; }
+    nav { padding: 0 24px; }
+    .hero { grid-template-columns: 1fr; gap: 40px; padding: 140px 24px 60px; }
     .principles { padding: 60px 24px; }
     .principles-grid { grid-template-columns: 1fr; }
     .principle-card.wide { grid-column: span 1; }
+    .traits-section { padding: 60px 24px; }
     .traits-grid { grid-template-columns: 1fr 1fr; }
-    .dark-band { padding: 60px 24px; }
     .approach { padding: 60px 24px; }
   }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
-  <a href="index.html" class="nav-logo">Myles Chuatico</a>
+  <a href="index.html" class="nav-name">Myles Chuatico</a>
   <ul class="nav-links">
     <li><a href="index.html#about">About</a></li>
-    <li><a href="index.html#projects">Projects</a></li>
+    <li><a href="index.html#projects">Work</a></li>
     <li><a href="index.html#tool">Live Demo</a></li>
     <li><a href="index.html#docs">Docs</a></li>
     <li><a href="how-i-work.html" class="active">How I Work</a></li>
@@ -410,179 +218,113 @@
   </ul>
 </nav>
 
-<!-- HERO -->
 <div class="hero">
   <div>
     <div class="hero-eyebrow">Working Style</div>
     <h1 class="hero-title">I figure<br>things <em>out.</em></h1>
-    <p class="hero-body">I'm not a developer. I don't plan on a whiteboard before starting. I look at something broken or missing, decide it's not acceptable, and figure out how to fix it, even if that means picking up a new skill along the way.</p>
+    <p class="hero-body">I'm not a developer. I don't plan on a whiteboard before starting. I look at something broken or missing, decide it's not acceptable, and figure out how to fix it — even if that means picking up a new skill along the way.</p>
   </div>
   <div class="hero-aside">
     <div class="pull-quote">
       <p>"I'm not a coder. I refuse to let not knowing something be the reason I don't fix it."</p>
-      <cite>- Myles Chuatico</cite>
+      <cite>— Myles Chuatico</cite>
     </div>
   </div>
 </div>
 
 <div class="divider"></div>
 
-<!-- PRINCIPLES -->
 <div class="principles">
   <div class="section-eyebrow">How I Think</div>
-  <h2 class="section-title">A few things that are<br>consistently true about me.</h2>
-
+  <h2 class="section-heading">A few things that are<br>consistently true about me.</h2>
   <div class="principles-grid">
-
     <div class="principle-card">
       <div class="principle-number">01</div>
       <div class="principle-title">I build, I don't just document.</div>
-      <div class="principle-body">When I find a gap, my instinct is to close it. The eLinq pipeline, the mortgage decision tool, the MPR automation suite. None of those were assigned to me. I saw something that wasn't working and built the fix.</div>
+      <div class="principle-body">When I find a gap, my instinct is to close it. The eLinq pipeline, the mortgage decision tool, the MPR automation suite — none were assigned to me. I saw something broken and built the fix.</div>
     </div>
-
     <div class="principle-card">
       <div class="principle-number">02</div>
       <div class="principle-title">I learn what the problem needs.</div>
-      <div class="principle-body">I've written batch scripts, built Power Query pipelines, and shipped a full JavaScript tool. I'm not a coder. I don't let not knowing something stop me. <strong>I pick up what the job needs.</strong></div>
+      <div class="principle-body">I've written batch scripts, built Power Query pipelines, and shipped a full JavaScript tool. <strong>I pick up what the job needs.</strong></div>
     </div>
-
     <div class="principle-card">
       <div class="principle-number">03</div>
       <div class="principle-title">I care about accuracy.</div>
-      <div class="principle-body">I don't claim things I didn't do. If a metric is real but unverifiable, I'll say so. If part of a project was someone else's work, I'll tell you. I'd rather undersell and be accurate than oversell and get caught in an interview.</div>
+      <div class="principle-body">I don't claim things I didn't do. If a metric is real but unverifiable, I'll say so. If part of a project was someone else's work, I'll tell you.</div>
     </div>
-
     <div class="principle-card">
       <div class="principle-number">04</div>
       <div class="principle-title">Process discipline is non-negotiable.</div>
       <div class="principle-body">Everything goes through UAT before production. I use checklists and screenshots because I've seen what happens when you skip it. <strong>Proper testing prevents incidents.</strong></div>
     </div>
-
     <div class="principle-card wide">
       <div class="principle-number">05</div>
       <div class="principle-title">Give me a problem, not a prescription.</div>
-      <div class="principle-body">Tell me what's broken. I'll figure out how to fix it. I work best with ownership of something end-to-end: from understanding the gap, through building the solution, to watching it stabilize in production. I don't need to be handed a method.</div>
+      <div class="principle-body">Tell me what's broken. I'll figure out how to fix it. I work best with end-to-end ownership: understanding the gap, building the solution, watching it stabilize in production. I don't need to be handed a method.</div>
     </div>
-
   </div>
 </div>
 
-<!-- DARK BAND – WORKING STYLE -->
-<div class="dark-band">
-  <div class="dark-band-inner">
+<div class="traits-section">
+  <div class="traits-inner">
     <div class="section-eyebrow">Working Style</div>
-    <h2 class="section-title">How I actually operate<br>day to day.</h2>
-
+    <h2 class="section-heading">How I actually operate day to day.</h2>
     <div class="traits-grid">
-
       <div class="trait-card">
-        <div class="trait-icon">🎯</div>
+        <div class="trait-icon">&#x1F3AF;</div>
         <div class="trait-title">Mostly solo, fine with collaborative</div>
-        <div class="trait-body">I'm self-directed and don't need frequent check-ins. I coordinate with stakeholders, get input from people who know the process, and align with leadership before anything goes live.</div>
+        <div class="trait-body">Self-directed, don't need frequent check-ins. I coordinate with stakeholders, get input from people who know the process, and align with leadership before anything goes live.</div>
       </div>
-
       <div class="trait-card">
-        <div class="trait-icon">⚡</div>
+        <div class="trait-icon">&#x26A1;</div>
         <div class="trait-title">Async or in-person, doesn't matter</div>
-        <div class="trait-body">I've worked both without friction. I document well enough that async handoffs hold up. I communicate clearly enough in person that meetings stay on track. The format doesn't matter. Clarity does.</div>
+        <div class="trait-body">I document well enough that async handoffs hold up. I communicate clearly enough in person that meetings stay on track. The format doesn't matter. Clarity does.</div>
       </div>
-
       <div class="trait-card">
-        <div class="trait-icon">🔧</div>
+        <div class="trait-icon">&#x1F527;</div>
         <div class="trait-title">I dive in first and adjust as I go</div>
-        <div class="trait-body">No whiteboard sessions before starting. I get something working, test it, find what's wrong, and improve it. The UAT process and go-live checklist are my structure.</div>
+        <div class="trait-body">No whiteboard sessions before starting. I get something working, test it, find what's wrong, and improve it. UAT and the go-live checklist are my structure.</div>
       </div>
-
       <div class="trait-card">
-        <div class="trait-icon">📊</div>
+        <div class="trait-icon">&#x1F4CA;</div>
         <div class="trait-title">I can present what I build</div>
-        <div class="trait-body">Toastmasters Presentation Mastery Level 3. I've walked AVPs through utilization findings, presented KPI dashboards to leadership, and run stakeholder reviews. I explain technical work to audiences who don't need the technical details.</div>
+        <div class="trait-body">Toastmasters Level 3. I've walked AVPs through findings, presented KPI dashboards to leadership, and run stakeholder reviews.</div>
       </div>
-
       <div class="trait-card">
-        <div class="trait-icon">🌏</div>
+        <div class="trait-icon">&#x1F30F;</div>
         <div class="trait-title">Used to working across all levels</div>
-        <div class="trait-body">My work sits between ops, tech, and people. I've coordinated with IT, finance leadership, department managers, and frontline agents, sometimes on the same project. I'm comfortable working at any level of the org.</div>
+        <div class="trait-body">My work sits between ops, tech, and people. I've coordinated with IT, finance leadership, department managers, and frontline agents on the same project.</div>
       </div>
-
       <div class="trait-card">
-        <div class="trait-icon">🧠</div>
+        <div class="trait-icon">&#x1F9E0;</div>
         <div class="trait-title">Honest about what I don't know</div>
         <div class="trait-body">If I haven't done something, I'll say so. Then I'll tell you how I'd approach it. The track record speaks for itself.</div>
       </div>
-
     </div>
   </div>
 </div>
 
-<!-- APPROACH FLOW -->
 <div class="approach">
   <div class="section-eyebrow">My Process</div>
-  <h2 class="section-title">How a typical initiative<br>goes for me.</h2>
-
+  <h2 class="section-heading">How a typical initiative goes for me.</h2>
   <div class="approach-flow">
-
-    <div class="approach-step">
-      <div class="step-circle">1</div>
-      <div class="step-content">
-        <div class="step-title">Notice the gap</div>
-        <div class="step-body">Something is slow, broken, or invisible. A process that depends on someone remembering to do it manually, or a question no one can answer because the data doesn't exist.</div>
-      </div>
-    </div>
-
-    <div class="approach-step">
-      <div class="step-circle">2</div>
-      <div class="step-content">
-        <div class="step-title">Actually understand it</div>
-        <div class="step-body">I talk to the people doing the work. I want to know what happens, not what the SOP says happens. Then I check with whoever owns the outcome to align on what fixed looks like.</div>
-      </div>
-    </div>
-
-    <div class="approach-step">
-      <div class="step-circle">3</div>
-      <div class="step-content">
-        <div class="step-title">Build something that works</div>
-        <div class="step-body">Start with what I know and pick up what I don't. Get a working version in UAT. It doesn't need to be perfect. It needs to work and be testable.</div>
-      </div>
-    </div>
-
-    <div class="approach-step">
-      <div class="step-circle">4</div>
-      <div class="step-content">
-        <div class="step-title">Test it properly</div>
-        <div class="step-body">UAT is not a checkbox. I test from the user's perspective, including edge cases. Screenshots document everything. Stakeholder sign-off before production.</div>
-      </div>
-    </div>
-
-    <div class="approach-step">
-      <div class="step-circle">5</div>
-      <div class="step-content">
-        <div class="step-title">Ship it and watch it</div>
-        <div class="step-body">Rollout follows the checklist. I monitor closely for the first few days. If something breaks, I want to catch it first.</div>
-      </div>
-    </div>
-
-    <div class="approach-step">
-      <div class="step-circle">6</div>
-      <div class="step-content">
-        <div class="step-title">Document and hand off clean</div>
-        <div class="step-body">Work instructions, agent guides, KB articles. If I built it, I document it well enough that someone else can run it without me. The goal is to never be the single point of failure.</div>
-      </div>
-    </div>
-
+    <div class="approach-step"><div class="step-circle">1</div><div class="step-content"><div class="step-title">Notice the gap</div><div class="step-body">Something is slow, broken, or invisible. A process that depends on someone remembering to do it manually, or a question no one can answer because the data doesn't exist.</div></div></div>
+    <div class="approach-step"><div class="step-circle">2</div><div class="step-content"><div class="step-title">Actually understand it</div><div class="step-body">I talk to the people doing the work. I want to know what happens, not what the SOP says happens. Then I check with whoever owns the outcome to align on what "fixed" looks like.</div></div></div>
+    <div class="approach-step"><div class="step-circle">3</div><div class="step-content"><div class="step-title">Build something that works</div><div class="step-body">Start with what I know and pick up what I don't. Get a working version in UAT. It doesn't need to be perfect — it needs to work and be testable.</div></div></div>
+    <div class="approach-step"><div class="step-circle">4</div><div class="step-content"><div class="step-title">Test it properly</div><div class="step-body">UAT is not a checkbox. I test from the user's perspective, including edge cases. Screenshots document everything. Stakeholder sign-off before production.</div></div></div>
+    <div class="approach-step"><div class="step-circle">5</div><div class="step-content"><div class="step-title">Ship it and watch it</div><div class="step-body">Rollout follows the checklist. I monitor closely for the first few days. If something breaks, I want to catch it first.</div></div></div>
+    <div class="approach-step"><div class="step-circle">6</div><div class="step-content"><div class="step-title">Document and hand off clean</div><div class="step-body">Work instructions, agent guides, KB articles. If I built it, I document it well enough that someone else can run it without me.</div></div></div>
   </div>
 </div>
 
-<!-- CTA -->
 <div class="cta-band">
   <h2>Want to work together?</h2>
-  <p>Looking for ops analyst, business analyst, and process improvement roles.<br>Open to remote, hybrid, or on-site in Southern California.</p>
-  <a href="index.html#contact" class="cta-btn">Get In Touch</a>
+  <p>Looking for ops analyst, business analyst, and process improvement roles. Open to remote, hybrid, or on-site in Southern California.</p>
+  <a href="index.html#contact" class="cta-btn">Get in touch</a>
 </div>
 
-<footer>
-  © 2026 Myles Chuatico · Orange County, CA · Open to remote & hybrid roles
-</footer>
+<footer>&copy; 2026 Myles Chuatico</footer>
 
 </body>
 </html>

@@ -4,23 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>eLinq Utilization Reporting Pipeline</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --surface2: #1c2128;
-    --border: #30363d;
-    --accent: #c8a96e;
-    --accent2: #58a6ff;
-    --green: #3fb950;
-    --orange: #d29922;
-    --red: #f85149;
-    --purple: #bc8cff;
-    --text: #e6edf3;
-    --muted: #7d8590;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'IBM Plex Sans', sans-serif;
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface2: #f5f3f0;
+    --border: #e8e8e8;
+    --accent: #5046e5;
+    --accent2: #5046e5;
+    --green: #1a8754;
+    --orange: #b45309;
+    --red: #c4314b;
+    --purple: #7c3aed;
+    --text: #111111;
+    --muted: #888888;
+    --mono: 'Instrument Sans', monospace;
+    --sans: 'Instrument Sans', sans-serif;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -79,8 +79,8 @@
 
   .problem-box {
     margin-top: 24px;
-    background: rgba(248,81,73,0.08);
-    border: 1px solid rgba(248,81,73,0.25);
+    background: #fce8ec;
+    border: 1px solid #f5c6cb;
     border-radius: 6px;
     padding: 14px 18px;
     display: flex;
@@ -102,7 +102,7 @@
 
   .problem-text {
     font-size: 13px;
-    color: #cdd9e5;
+    color: #555555;
     line-height: 1.7;
   }
 
@@ -154,6 +154,7 @@
   .stage-inner:hover {
     border-color: var(--accent);
     transform: translateY(-3px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
   }
 
   .stage-number {
@@ -201,12 +202,12 @@
     font-weight: 600;
   }
 
-  .tag-batch { background: rgba(88,166,255,0.12); color: var(--accent2); }
-  .tag-pq    { background: rgba(63,185,80,0.12);  color: var(--green); }
-  .tag-sas   { background: rgba(188,140,255,0.12); color: var(--purple); }
-  .tag-pbi   { background: rgba(200,169,110,0.12); color: var(--accent); }
-  .tag-manual { background: rgba(210,153,34,0.12); color: var(--orange); }
-  .tag-source { background: rgba(248,81,73,0.12);  color: var(--red); }
+  .tag-batch { background: #ededfc; color: var(--accent2); }
+  .tag-pq    { background: #e6f5ed; color: var(--green); }
+  .tag-sas   { background: #f3eefb; color: var(--purple); }
+  .tag-pbi   { background: #ededfc; color: var(--accent); }
+  .tag-manual { background: #fef3c7; color: var(--orange); }
+  .tag-source { background: #fce8ec; color: var(--red); }
 
   /* Arrow connector */
   .arrow-connector {
@@ -286,7 +287,7 @@
     transition: border-color 0.2s;
   }
 
-  .detail-card:hover { border-color: var(--accent2); }
+  .detail-card:hover { border-color: var(--accent2); box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
 
   .detail-card-label {
     font-family: var(--mono);
@@ -312,7 +313,7 @@
 
   /* code block style */
   .code-block {
-    background: var(--bg);
+    background: #f5f3f0;
     border: 1px solid var(--border);
     border-radius: 4px;
     padding: 12px 14px;
@@ -331,8 +332,8 @@
 
   /* ── OUTCOME ── */
   .outcome-box {
-    background: rgba(63,185,80,0.06);
-    border: 1px solid rgba(63,185,80,0.2);
+    background: #e6f5ed;
+    border: 1px solid #b8e0c8;
     border-radius: 8px;
     padding: 24px 28px;
     display: grid;
@@ -386,8 +387,8 @@
     font-family: var(--mono);
     font-size: 10px;
     color: var(--orange);
-    background: rgba(210,153,34,0.1);
-    border: 1px solid rgba(210,153,34,0.2);
+    background: #fef3c7;
+    border: 1px solid #fde68a;
     padding: 4px 10px;
     border-radius: 3px;
   }
