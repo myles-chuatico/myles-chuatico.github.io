@@ -71,6 +71,12 @@
 
   .hero-aside { opacity: 0; animation: fadeUp 0.6s ease 0.45s forwards; }
 
+  .hero-photo {
+    width: 100%; max-width: 300px; border-radius: var(--radius-lg);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.08); object-fit: cover;
+    aspect-ratio: 4/5; margin-bottom: 20px;
+  }
+
   .pull-quote {
     border-left: 3px solid var(--accent);
     padding: 20px 24px; background: var(--surface);
@@ -195,6 +201,8 @@
   @media (max-width: 768px) {
     nav { padding: 0 24px; }
     .hero { grid-template-columns: 1fr; gap: 40px; padding: 140px 24px 60px; }
+    .hero-aside { text-align: center; }
+    .hero-photo { max-width: 220px; margin: 0 auto 20px; }
     .principles { padding: 60px 24px; }
     .principles-grid { grid-template-columns: 1fr; }
     .principle-card.wide { grid-column: span 1; }
@@ -225,6 +233,7 @@
     <p class="hero-body">I'm not a developer. I don't plan on a whiteboard before starting. I look at something broken or missing, decide it's not acceptable, and figure out how to fix it — even if that means picking up a new skill along the way.</p>
   </div>
   <div class="hero-aside">
+    <img src="photo-formal.png" alt="Myles Chuatico" class="hero-photo">
     <div class="pull-quote">
       <p>"I'm not a coder. I refuse to let not knowing something be the reason I don't fix it."</p>
       <cite>— Myles Chuatico</cite>
