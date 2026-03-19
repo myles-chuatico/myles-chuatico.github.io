@@ -63,22 +63,20 @@
     /* ── HERO ── */
     .hero {
       padding: 160px 48px 100px;
-      max-width: 1120px; margin: 0 auto;
-      display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 64px; align-items: center;
+      max-width: 900px; margin: 0 auto; text-align: center;
     }
-
-    .hero-content { text-align: left; }
 
     .hero-photo {
       display: flex; justify-content: center; align-items: center;
-      opacity: 0; animation: fadeUp 0.6s ease 0.5s forwards;
+      margin-bottom: 32px;
+      opacity: 0; animation: fadeUp 0.6s ease 0.3s forwards;
     }
 
     .hero-photo img {
-      width: 100%; max-width: 340px;
-      border-radius: var(--radius-lg);
+      width: 160px; height: 160px;
+      border-radius: 50%;
       box-shadow: var(--shadow-lg);
-      object-fit: cover; aspect-ratio: 4/5;
+      object-fit: cover; object-position: center top;
     }
 
     .hero-badge {
@@ -103,12 +101,12 @@
 
     .hero-sub {
       font-size: 18px; color: var(--text-secondary); line-height: 1.7;
-      max-width: 560px; margin: 0 0 40px;
+      max-width: 560px; margin: 0 auto 40px;
       opacity: 0; animation: fadeUp 0.6s ease 0.35s forwards;
     }
 
     .hero-actions {
-      display: flex; justify-content: flex-start; gap: 12px; flex-wrap: wrap;
+      display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
       opacity: 0; animation: fadeUp 0.6s ease 0.5s forwards;
     }
 
@@ -301,12 +299,8 @@
     @media (max-width: 900px) {
       nav { padding: 0 24px; }
       .nav-links { gap: 20px; }
-      .hero { padding: 140px 24px 60px; grid-template-columns: 1fr; text-align: center; }
-      .hero-content { text-align: center; }
-      .hero-photo { order: -1; }
-      .hero-photo img { max-width: 240px; }
-      .hero-actions { justify-content: center; }
-      .hero-sub { margin: 0 auto 40px; }
+      .hero { padding: 140px 24px 60px; }
+      .hero-photo img { width: 120px; height: 120px; }
       .stats-bar { flex-wrap: wrap; gap: 32px; padding: 0 24px 60px; }
       section { padding: 60px 24px; }
       .about-grid, .tool-grid { grid-template-columns: 1fr; gap: 48px; }
@@ -332,18 +326,16 @@
 </nav>
 
 <div class="hero">
-  <div class="hero-content">
-    <div class="hero-badge">Open to opportunities</div>
-    <h1>I find broken processes<br>and <em>build the fix</em></h1>
-    <p class="hero-sub">Operations analyst with 7+ years across financial services and international organizations. I don't just document problems — I build dashboards, decision tools, and automation pipelines to solve them.</p>
-    <div class="hero-actions">
-      <a href="#projects" class="btn btn-fill">View my work</a>
-      <a href="https://www.linkedin.com/in/myles-joshua-chuatico-61b7b42a1" target="_blank" class="btn btn-outline">LinkedIn &#x2197;</a>
-      <a href="Myles_Chuatico_Resume.docx" download class="btn btn-outline">Resume &#x2193;</a>
-    </div>
-  </div>
+  <div class="hero-badge">Open to opportunities</div>
   <div class="hero-photo">
     <img src="photo-casual.png" alt="Myles Chuatico">
+  </div>
+  <h1>I find broken processes<br>and <em>build the fix</em></h1>
+  <p class="hero-sub">Operations analyst with 7+ years across financial services and international organizations. I don't just document problems — I build dashboards, decision tools, and automation pipelines to solve them.</p>
+  <div class="hero-actions">
+    <a href="#projects" class="btn btn-fill">View my work</a>
+    <a href="https://www.linkedin.com/in/myles-joshua-chuatico-61b7b42a1" target="_blank" class="btn btn-outline">LinkedIn &#x2197;</a>
+    <a href="Myles_Chuatico_Resume.docx" download class="btn btn-outline">Resume &#x2193;</a>
   </div>
 </div>
 
