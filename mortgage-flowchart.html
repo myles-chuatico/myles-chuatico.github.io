@@ -147,6 +147,14 @@ h1{font-size:clamp(22px,3vw,34px);font-weight:700;color:#fff;line-height:1.1;mar
 
 @media(max-width:640px){.mast,.page,.foot{padding-left:20px;padding-right:20px;}.tab-bar{padding:0 16px;}}
 </style>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RB6FZTR34K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-RB6FZTR34K");
+</script>
 </head>
 <body>
 
@@ -154,9 +162,9 @@ h1{font-size:clamp(22px,3vw,34px);font-weight:700;color:#fff;line-height:1.1;mar
 <div class="mast">
   <div class="mast-inner">
     <div>
-      <div class="kicker">HSBC · Change Management · 2024</div>
+      <div class="kicker">Requirements Analysis · Process Design · HSBC · 2024</div>
       <h1>Mortgage Decision Tool<br>Process Flow</h1>
-      <p class="msub">Full end-to-end agent flow. UK / FCA · Collections · Conventional Mortgage.</p>
+      <p class="msub">Full requirements-to-deployment process mapping. 4 phases, 20+ decision nodes, 20 terminal outcomes. UK / FCA CONC 7.3 / 7.14 compliance.</p>
     </div>
     <div class="mmeta">
       <div class="mm">Phases <span>4</span></div>
@@ -185,7 +193,7 @@ h1{font-size:clamp(22px,3vw,34px);font-weight:700;color:#fff;line-height:1.1;mar
 <div class="panel on" id="panel-pre">
   <div class="pi">
     <div class="pi-badge" style="background:#555;color:#fff;">Phase 1</div>
-    <div><div class="pi-title">Pre-call Checks</div><div class="pi-desc">Establish who is on the line first – no tipping off. Verify identity, then check account flags. Any hard stop ends routing.</div></div>
+    <div><div class="pi-title">Pre-call Checks</div><div class="pi-desc">Requirements: verify identity before any account discussion. Decision logic maps verification paths for inbound/outbound, customer/third-party, and account flag checks. Any hard stop terminates the flow.</div></div>
   </div>
 
   <div class="flow">
@@ -461,7 +469,7 @@ h1{font-size:clamp(22px,3vw,34px);font-weight:700;color:#fff;line-height:1.1;mar
 <div class="panel" id="panel-rt">
   <div class="pi">
     <div class="pi-badge" style="background:var(--navy);color:#fff;">Phase 2</div>
-    <div><div class="pi-title">Account Routing</div><div class="pi-desc">Determine arrears status, handle GA marker, confirm account type.</div></div>
+    <div><div class="pi-title">Account Routing</div><div class="pi-desc">Business rules for arrears classification, GA marker handling, and joint account logic. Requirements gathered from process partner and aligned with AVP before implementation.</div></div>
   </div>
   <div class="flow">
     <div><span class="pill start">Pre-call complete</span></div>
@@ -586,7 +594,7 @@ h1{font-size:clamp(22px,3vw,34px);font-weight:700;color:#fff;line-height:1.1;mar
 <div class="panel" id="panel-ctx">
   <div class="pi">
     <div class="pi-badge" style="background:var(--gold);color:#fff;">Phase 3</div>
-    <div><div class="pi-title">Situation Context</div><div class="pi-desc">Understand the full situation, assess income, determine if I&E is appropriate.</div></div>
+    <div><div class="pi-title">Situation Context</div><div class="pi-desc">Structured information gathering: hardship reason, full situation assessment, income verification. Decision nodes determine whether to proceed to I&amp;E or route to specialist (BS referral, LTNA).</div></div>
   </div>
   <div class="flow">
     <div><span class="pill start">Routing complete</span></div>
@@ -686,7 +694,7 @@ h1{font-size:clamp(22px,3vw,34px);font-weight:700;color:#fff;line-height:1.1;mar
 <div class="panel" id="panel-ie">
   <div class="pi">
     <div class="pi-badge" style="background:var(--ie);color:#fff;">Phase 4</div>
-    <div><div class="pi-title">I&amp;E Assessment</div><div class="pi-desc">Conduct full I&E on system. Cross-check all figures. Surplus result drives plan selection.</div></div>
+    <div><div class="pi-title">I&amp;E Assessment</div><div class="pi-desc">Core analysis phase. Structured income and expenditure assessment with cross-referencing against transaction history. Surplus calculation drives plan selection through a multi-branch decision tree.</div></div>
   </div>
   <div class="flow">
     <div><span class="pill start">Income confirmed – proceed to I&amp;E</span></div>
@@ -890,7 +898,7 @@ h1{font-size:clamp(22px,3vw,34px);font-weight:700;color:#fff;line-height:1.1;mar
 <div class="panel" id="panel-plans">
   <div class="pi">
     <div class="pi-badge" style="background:#1a5c33;color:#fff;">Plans</div>
-    <div><div class="pi-title">Repayment Plan Outcomes</div><div class="pi-desc">All terminal plan outcomes. Determined by surplus level, MCP capacity, and hardship duration.</div></div>
+    <div><div class="pi-title">Repayment Plan Outcomes</div><div class="pi-desc">All terminal outcomes mapped from the decision logic. Each plan type includes eligibility criteria, regulatory requirements (FCA CONC 7.3/7.14), and mandatory review dates.</div></div>
   </div>
 
   <div class="sl" style="margin-bottom:16px;">Surplus present</div>
@@ -936,7 +944,7 @@ h1{font-size:clamp(22px,3vw,34px);font-weight:700;color:#fff;line-height:1.1;mar
 <div class="panel" id="panel-all">
   <div class="pi">
     <div class="pi-badge" style="background:var(--muted);color:#fff;">Reference</div>
-    <div><div class="pi-title">All Outcomes</div><div class="pi-desc">Quick reference for every terminal outcome across all four phases.</div></div>
+    <div><div class="pi-title">All Outcomes</div><div class="pi-desc">Complete reference of every terminal outcome across all four phases. Used for validation during requirements sign-off and UAT testing.</div></div>
   </div>
   <div class="og">
     <div class="oc"><div class="oc-icon">📵</div><div class="oc-phase">Pre-call 1.2</div><div class="oc-title">Outbound – no customer</div><div class="oc-desc">End call, no details, arrange callback.</div></div>
@@ -967,7 +975,7 @@ h1{font-size:clamp(22px,3vw,34px);font-weight:700;color:#fff;line-height:1.1;mar
 </div><!-- /page -->
 
 <div class="foot">
-  <div class="fl"><b>Myles Chuatico</b> · HSBC Change Management · 2024</div>
+  <div class="fl"><b>Myles Chuatico</b> · Requirements Analysis &amp; Process Design · HSBC · 2024</div>
   <a href="mortgage-decision-tool.html" class="flink">
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
     Open interactive tool

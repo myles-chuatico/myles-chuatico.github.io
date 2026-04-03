@@ -393,18 +393,26 @@
     border-radius: 3px;
   }
 </style>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RB6FZTR34K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-RB6FZTR34K");
+</script>
 </head>
 <body>
 
 <!-- HEADER -->
 <div class="header">
-  <div class="header-eyebrow">Automation Project · HSBC Financial Support Dept</div>
+  <div class="header-eyebrow">Requirements Analysis · Data Pipeline Design · HSBC</div>
   <h1>eLinq Utilization<br><span>Reporting Pipeline</span></h1>
-  <p class="header-desc">A self-initiated automation project that transformed fragmented, manually-collected log data into a daily-refreshing centralized utilization dashboard, giving leadership the data to improve system adoption across the department.</p>
+  <p class="header-desc">Identified a critical data gap, gathered requirements from leadership, assessed technical constraints on restricted endpoints, and designed and delivered an end-to-end reporting pipeline, from problem definition through weekly stakeholder delivery.</p>
 
   <div class="problem-box">
-    <div class="problem-label">Problem</div>
-    <div class="problem-text">AVPs flagged declining call volumes but had no data on eLinq adoption. Log files sat on individual agent machines with no collection process. Reports were manual, inconsistent, and days late.</div>
+    <div class="problem-label">Business Problem</div>
+    <div class="problem-text">AVPs flagged declining call volumes but had no data to explain why. No one had defined what needed to be measured, how to collect it, or who should receive the analysis. The gap wasn't just technical. No one had scoped the requirements.</div>
   </div>
 </div>
 
@@ -416,11 +424,11 @@
     <!-- Stage 1 -->
     <div class="stage">
       <div class="stage-inner">
-        <div class="stage-number">01 / SOURCE</div>
+        <div class="stage-number">01 / DATA SOURCE</div>
         <span class="stage-icon">🖥️</span>
         <div class="stage-title">Agent Machines</div>
         <div class="stage-subtitle">eLinq log output</div>
-        <div class="stage-desc">Each agent's machine generates daily eLinq activity logs as part of normal tool usage. 100+ agents across the department, each with a local log file.</div>
+        <div class="stage-desc">Each agent's machine generates daily eLinq activity logs. 100+ agents across the department, each with a local log file. Identified during requirements analysis as the only available data source.</div>
         <span class="stage-tag tag-source">Raw Logs</span>
       </div>
     </div>
@@ -439,8 +447,8 @@
         <div class="stage-number">02 / COLLECT</div>
         <span class="stage-icon">📜</span>
         <div class="stage-title">Batch Script</div>
-        <div class="stage-subtitle">Windows .bat automation</div>
-        <div class="stage-desc">Agent machines were locked-down corporate endpoints with no access to third-party automation tools or admin-level software. Windows Task Scheduler was the only available automation mechanism. A batch script was deployed to each machine, scheduled to run 10 minutes before end of shift, copying the day's eLinq log file to a mapped shared network folder.</div>
+        <div class="stage-subtitle">Constraint-driven solution</div>
+        <div class="stage-desc">Constraint analysis revealed locked-down endpoints with no third-party tool access or admin privileges. Windows Task Scheduler was the only viable automation mechanism. Designed a batch script scheduled to run before end of shift, copying the day's log to a shared network folder. Solution shaped entirely by the constraints identified during requirements gathering.</div>
         <span class="stage-tag tag-batch">.bat script</span>
       </div>
     </div>
@@ -518,9 +526,9 @@
       <div class="stage-inner">
         <div class="stage-number">06 / REPORT</div>
         <span class="stage-icon">📊</span>
-        <div class="stage-title">Weekly Leadership Report</div>
-        <div class="stage-subtitle">Excel dashboard + findings</div>
-        <div class="stage-desc">Finalized utilization data goes to AVPs and team leaders weekly. Low-utilization agents are flagged for coaching. A troubleshooting guide covers common log transmission errors.</div>
+        <div class="stage-title">Weekly Stakeholder Report</div>
+        <div class="stage-subtitle">Analysis &amp; recommendations</div>
+        <div class="stage-desc">Finalized utilization analysis delivered to AVPs and team leaders weekly. Low-utilization agents flagged with recommendations for targeted coaching. Troubleshooting guide authored and distributed department-wide.</div>
         <span class="stage-tag tag-pbi">Excel · Reporting</span>
       </div>
     </div>
@@ -529,13 +537,13 @@
 
   <!-- DETAIL SECTION -->
   <div class="detail-section">
-    <div class="section-heading">Technical Detail</div>
+    <div class="section-heading">Implementation Detail</div>
     <div class="detail-grid">
 
       <div class="detail-card">
-        <div class="detail-card-label">Batch Script Logic</div>
-        <div class="detail-card-title">Automated Log Collection</div>
-        <div class="detail-card-body">Agent machines were restricted corporate endpoints with no access to third-party tools or elevated privileges. Windows Task Scheduler was the only viable automation option. The batch script runs 10 minutes before end of shift, when the day's eLinq activity is complete. It copies the log to the shared network path and handles file naming (agent ID + date) to prevent overwrites and keep attribution clean.</div>
+        <div class="detail-card-label">Constraint Analysis</div>
+        <div class="detail-card-title">Solution Design Under Restrictions</div>
+        <div class="detail-card-body">Requirements gathering revealed that agent machines were restricted corporate endpoints with no third-party tools and no elevated privileges. Assessed available options and identified Windows Task Scheduler as the only viable mechanism. Designed the collection script around these constraints: runs before end of shift, handles file naming (agent ID + date) for attribution, prevents overwrites.</div>
         <div class="code-block">
           <span class="code-comment">:: Daily eLinq log push</span><br>
           <span class="code-cmd">@echo off</span><br>
@@ -547,9 +555,9 @@
       </div>
 
       <div class="detail-card">
-        <div class="detail-card-label">Power Query Steps</div>
-        <div class="detail-card-title">Data Cleaning Pipeline</div>
-        <div class="detail-card-body">Power Query M script connects to the shared folder, combines all files, and applies a standardized set of cleaning transformations that run automatically on each daily refresh.</div>
+        <div class="detail-card-label">Data Transformation</div>
+        <div class="detail-card-title">ETL Specification &amp; Implementation</div>
+        <div class="detail-card-body">Defined the transformation requirements: raw logs needed parsing, standardization, deduplication, and agent attribution. Implemented in Power Query M, connecting to the shared folder with automated daily refresh.</div>
         <div class="code-block">
           <span class="code-comment">// Power Query M steps</span><br>
           <span class="code-cmd">1.</span> Folder.Files(shared_path)<br>
@@ -562,9 +570,9 @@
       </div>
 
       <div class="detail-card">
-        <div class="detail-card-label">Monitoring & Maintenance</div>
-        <div class="detail-card-title">Ongoing Pipeline Health</div>
-        <div class="detail-card-body">Daily check of shared folder to confirm all expected log files arrived. When agents had issues sending logs (network errors, permissions), diagnosed and resolved individually. Troubleshooting guide distributed dept-wide.</div>
+        <div class="detail-card-label">Quality Assurance</div>
+        <div class="detail-card-title">Ongoing Validation &amp; Stakeholder Support</div>
+        <div class="detail-card-body">Established daily validation checks: file count vs agent roster, timestamp integrity, refresh status, SAS match deltas. Diagnosed and resolved individual agent issues (network errors, permissions). Authored and distributed a troubleshooting guide department-wide to reduce support requests.</div>
         <div class="code-block">
           <span class="code-comment">// Daily checks</span><br>
           <span class="code-cmd">✓</span> File count vs agent roster<br>
@@ -583,26 +591,26 @@
     <div class="section-heading">Outcomes</div>
     <div class="outcome-box">
       <div class="outcome-item">
-        <div class="outcome-label">Efficiency</div>
-        <div class="outcome-val">Fully Automated</div>
-        <div class="outcome-desc">Replaced a fully manual, fragmented collection process with a zero-touch daily pipeline. No agent action required beyond normal eLinq use.</div>
+        <div class="outcome-label">Process</div>
+        <div class="outcome-val">Gap → Requirements → Solution</div>
+        <div class="outcome-desc">Identified the data gap, gathered requirements from AVPs, assessed constraints, designed the pipeline architecture, and delivered end-to-end.</div>
       </div>
       <div class="outcome-item">
-        <div class="outcome-label">Visibility</div>
-        <div class="outcome-val">Weekly Leadership Reports</div>
-        <div class="outcome-desc">AVPs and team leaders received weekly utilization breakdowns per agent and team, enabling targeted coaching of low-utilization staff.</div>
+        <div class="outcome-label">Stakeholder Impact</div>
+        <div class="outcome-val">Weekly Utilization Analysis</div>
+        <div class="outcome-desc">AVPs and team leaders received actionable weekly breakdowns by agent and team, enabling data-driven coaching conversations for the first time.</div>
       </div>
       <div class="outcome-item">
-        <div class="outcome-label">Adoption</div>
-        <div class="outcome-val">Measurably Improved</div>
-        <div class="outcome-desc">eLinq adoption increased across the department following the introduction of data-backed coaching conversations. AVP concerns about declining call volumes addressed.</div>
+        <div class="outcome-label">Business Outcome</div>
+        <div class="outcome-val">Adoption Measurably Improved</div>
+        <div class="outcome-desc">eLinq adoption increased across the department. AVP concerns about declining call volumes addressed with data rather than speculation.</div>
       </div>
     </div>
   </div>
 
   <!-- FOOTER -->
   <div class="diagram-footer">
-    <div class="footer-note">eLinq Utilization Pipeline · HSBC Financial Support · Built by Myles Chuatico · 2023–2024</div>
+    <div class="footer-note">eLinq Utilization Pipeline · Requirements Analysis → Design → Delivery · HSBC · Myles Chuatico · 2023–2024</div>
     <div class="portfolio-note">⚠ PORTFOLIO SAMPLE, Org details sanitized</div>
   </div>
 
