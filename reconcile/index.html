@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>YNAB Reconcile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,600;1,6..72,300;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9e9e9; --ink:#000; --green:#00846a; --muted:#4a4a4a; --rule:rgba(0,0,0,.14); --grid:#d1d2d2;
+  --fill:rgba(242,242,242,.62); --hover:rgba(215,215,215,.55); --warn:#a0522d;
+  --display:"Instrument Serif","Times New Roman",serif;
+  --serif:"Newsreader","Times New Roman",serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--ink);font:400 16.5px/1.5 var(--serif);font-variant-numeric:lining-nums;
+  background:var(--bg);
+  background-image:linear-gradient(to right,var(--grid) 1px,transparent 1px),linear-gradient(to bottom,var(--grid) 1px,transparent 1px);
+  background-size:max(140px,calc(100vw / 7)) 200px;background-attachment:fixed}
+input,select,button{font:inherit;color:inherit}
+::placeholder{color:var(--muted);font-style:italic}
+input[type=checkbox]{accent-color:var(--ink);width:15px;height:15px}
+
+/* pills, like the site's email field and Send/Buy buttons */
+input[type=text],input[type=password],input[type=number],select{background:var(--fill);border:1px solid var(--ink);border-radius:50px;padding:6px 14px}
+button{background:transparent;border:1px solid var(--ink);border-radius:50px;padding:6px 18px;cursor:pointer}
+button.primary{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+button.go{background:var(--green);border-color:var(--green);color:var(--ink)}
+button:disabled{opacity:.35;cursor:default}
+button.link{border:0;border-radius:0;padding:0;background:none;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:1px solid var(--green);outline-offset:2px}
+.muted{color:var(--muted)}
+.chk{display:inline-flex;gap:7px;align-items:center}
+em{font-style:italic}
+
+/* masthead */
+.mast{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:16px 24px 0}
+.brand{font-weight:600;font-size:16px}
+.stamp{color:var(--green);font-size:14px}
+.mast-r{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:10px 16px;text-align:right}
+.title{text-align:center;padding:28px 16px 8px}
+.title h1{margin:0;font:400 clamp(56px,11vw,132px)/.9 var(--display);color:var(--green);text-transform:uppercase;letter-spacing:-.01em}
+.title p{margin:10px 0 0;font:400 22px var(--display)}
+.title p em{font-style:italic}
+
+main{max-width:1120px;margin:0 auto;padding:28px 24px 120px}
+h2{font:400 30px/1.1 var(--display);margin:0 0 6px}
+
+#connectPanel{max-width:520px;margin:20px auto 0;display:grid;gap:14px}
+#connectPanel p{margin:0}
+.field{position:relative;display:flex}
+.field input{flex:1;min-width:0;padding:10px 120px 10px 18px;font-size:18px}
+.field button{position:absolute;right:3px;top:3px;bottom:3px;padding:0 22px}
+.fine{font-size:14px}
+
+.empty{text-align:center;padding:48px 16px;font:400 22px/1.35 var(--serif);cursor:pointer}
+.empty u{text-underline-offset:4px;text-decoration-thickness:1px}
+.empty .fine{display:block;margin-top:8px;color:var(--muted)}
+body.dragging .empty{color:var(--green)}
+body.dragging #fileTable{outline:1px dashed var(--green);outline-offset:6px}
+
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;margin:18px 0 36px}
+.toolbar input[type=number]{width:3.4em;padding:3px 8px;text-align:center}
+.toolbar input[type=date]{background:var(--fill);border:1px solid var(--ink);border-radius:50px;padding:3px 10px}
+
+/* content sits on clean paper; the grid only shows in the margins */
+main>section{background:var(--bg);box-shadow:0 0 0 16px var(--bg)}
+.scroll{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font:500 13.5px var(--serif);letter-spacing:.02em;color:var(--muted);padding:8px 12px;border-bottom:1px solid var(--ink);white-space:nowrap}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--rule);vertical-align:middle}
+.tbl tbody tr:hover td{background:var(--hover)}
+.tbl tr.off td:not(:first-child){opacity:.5}
+.tbl th:first-child,.tbl td:first-child{padding-left:2px}
+/* inline edits read as ruled lines, not boxes */
+.tbl input[type=text],.tbl select{width:100%;min-width:150px;max-width:250px;background:transparent;border:0;border-bottom:1px solid var(--ink);border-radius:0;padding:3px 0;font-size:16px}
+.tbl th .sort{border:0;border-radius:0;padding:0;background:none;font:inherit;color:inherit;letter-spacing:inherit;cursor:pointer}
+.tbl th .sort:hover{color:var(--ink)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.num{text-align:right;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
+.date{white-space:nowrap;font-variant-numeric:tabular-nums lining-nums}
+.in{color:var(--green)}
+.desc{max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flag{font-size:14px;color:var(--warn);margin-left:8px;white-space:nowrap}
+#fileTable .x{border:0;padding:2px 8px;font-size:15px}
+
+.tabs{display:flex;flex-wrap:wrap;gap:6px 28px;border-bottom:1px solid var(--ink)}
+.tab{border:0;border-radius:0;padding:10px 0 9px;background:none;font:400 22px var(--display);color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.on{color:var(--ink);border-bottom-color:var(--ink)}
+.tab .n{font:500 15px var(--serif);margin-left:7px}
+.tab.todo .n{color:var(--green);font-weight:600}
+.note{color:var(--muted);margin:14px 0 6px}
+
+.applybar{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--ink);padding:12px 24px;display:flex;justify-content:flex-end;gap:20px;align-items:center}
+.applybar #applyInfo{font-weight:500}
+#toast{position:fixed;bottom:72px;right:24px;max-width:440px;background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:24px;display:none;white-space:pre-wrap;z-index:10}
+.err{color:#b3261e}
+@media (max-width:640px){.mast{padding:12px 16px 0}.title{padding-top:20px}main{padding:20px 16px 120px}.applybar{padding:10px 16px}}
+</style>
+</head>
+<body>
+<header class="mast">
+  <div><div class="brand">Reconcile.</div><div class="stamp" id="stamp"></div></div>
+  <div class="mast-r">
+    <span id="budgetRow" hidden>
+      <select id="budget" aria-label="Plan"></select>
+      <label class="chk" title="Hide every other plan in this browser so changes can only go to this one"><input type="checkbox" id="lock"> Lock to this plan</label>
+    </span>
+    <span id="budgetInfo" class="muted"></span>
+    <button id="btnToken" class="link" hidden>Token</button>
+  </div>
+</header>
+<div class="title">
+  <h1>Reconcile</h1>
+  <p><em>Statement against</em> <span id="planName">YNAB</span></p>
+</div>
+<main>
+  <section id="connectPanel">
+    <h2>Connect your plan</h2>
+    <p>Paste a personal access token from YNAB, under <em>Account Settings → Developer Settings</em>. It is only ever sent to api.ynab.com.</p>
+    <div class="field">
+      <input id="token" type="password" placeholder="Your token" autocomplete="off">
+      <button id="btnConnect" class="primary">Connect</button>
+    </div>
+    <label class="chk fine"><input type="checkbox" id="remember"> Remember on this computer</label>
+  </section>
+
+  <section id="filesSection" hidden>
+    <div id="drop" class="empty" tabindex="0">Drop your bank or card exports anywhere on the page, or <u>choose files</u>.<span class="fine">CSV, QFX or OFX</span></div>
+    <input id="fileInput" type="file" multiple accept=".csv,.txt,.qfx,.ofx" hidden>
+    <div class="scroll">
+      <table id="fileTable" class="tbl" hidden>
+        <thead><tr><th>File</th><th class="num">Rows</th><th>Dates</th><th>YNAB account</th><th>Signs</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="toolbar" id="toolbar" hidden>
+      <button id="btnRun" class="primary" disabled>Reconcile</button>
+      <button id="btnAdd" class="link">Add files</button>
+      <button id="btnSample" class="link" hidden>Load sample files</button>
+      <span class="chk">Dates <input id="from" type="date" aria-label="From date"> to <input id="to" type="date" aria-label="To date"> <button id="btnAllDates" class="link" hidden>All dates</button></span>
+      <label class="chk" title="How many days after your YNAB date the bank may post it">Match within <input id="win" type="number" min="0" max="15" value="2"> days</label>
+      <span id="runInfo" class="muted"></span>
+    </div>
+  </section>
+
+  <section id="results" hidden>
+    <div class="tabs" id="tabs"></div>
+    <div class="note" id="tabNote"></div>
+    <div class="scroll" id="sections"></div>
+  </section>
+</main>
+<div class="applybar" id="applybar" hidden>
+  <span id="applyInfo"></span>
+  <button id="btnApply" class="go">Apply to YNAB</button>
+</div>
+<div id="toast"></div>
+<datalist id="payeeList"></datalist>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const DEMO = new URLSearchParams(location.search).has('demo');
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem('ynabrec.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('ynabrec.' + k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem('ynabrec.' + k); } catch {} },
+};
+const S = { token: '', budgets: [], budgetId: '', currency: 'USD', accounts: [], payees: [], catGroups: [], catById: {}, tx: [], files: [], result: null };
+let fileSeq = 0;
+
+// ---------------- utils ----------------
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const toDays = d => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 864e5;
+const dayDiff = (a, b) => toDays(a) - toDays(b);
+const addDays = (d, n) => new Date((toDays(d) + n) * 864e5).toISOString().slice(0, 10);
+const money = m => { const s = (Math.abs(m) / 1000).toLocaleString('en-US', { style: 'currency', currency: S.currency || 'USD' }); return m < 0 ? '−' + s : `<span class="in">${s}</span>`; };
+const MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
+const fmtDate = d => `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` + (d.slice(0, 4) === String(new Date().getFullYear()) ? '' : `, ${d.slice(0, 4)}`);
+function toast(msg, ms = 4000) { const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = 'none', ms); }
+
+function ymd(y, m, d) {
+  if (y < 1990 || y > 2100 || m < 1 || m > 12 || d < 1 || d > 31) return null;
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+function parseDate(s) {
+  if (!s) return null;
+  s = String(s).trim();
+  let m;
+  if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return ymd(+m[1], +m[2], +m[3]);
+  if ((m = s.match(/^(\d{4})(\d{2})(\d{2})/))) return ymd(+m[1], +m[2], +m[3]);
+  if ((m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/))) { let y = +m[3]; if (y < 100) y += 2000; return ymd(y, +m[1], +m[2]); }
+  if (/[a-z]{3}/i.test(s)) { const t = Date.parse(s); if (!isNaN(t)) { const d = new Date(t); return ymd(d.getFullYear(), d.getMonth() + 1, d.getDate()); } }
+  return null;
+}
+function parseAmount(s) {
+  if (s == null) return null;
+  s = String(s).trim();
+  if (!s || !/\d/.test(s)) return null;
+  let neg = false;
+  if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); }
+  const lead = s.slice(0, s.search(/\d/));
+  if (lead.includes('-') || /-\s*$/.test(s)) neg = !neg;
+  const v = parseFloat(s.replace(/[^0-9.]/g, ''));
+  if (isNaN(v)) return null;
+  return Math.round(v * 1000) * (neg ? -1 : 1);
+}
+
+// Description normalisation + similarity, used for both matching and payee suggestions.
+const NOISE = new Set('pos debit credit card purchase recurring payment ach www com inc llc the online checkcard visa mastercard withdrawal deposit transaction pending ppd web des indn authorized from with store'.split(' '));
+const ALIAS = { amzn: 'amazon', wm: 'walmart', wal: 'walmart', mktp: '', mktplace: '' };
+// Card statements tack the wallet onto the merchant, sometimes glued to the city ("VALLCAAPPLE PAY ENDING IN 1234").
+const WALLET = /(apple\s?pay|aplpay|google\s?pay|samsung\s?pay)(\s*ending\s*in\s*\d+)?/gi;
+const stripWallet = s => String(s || '').replace(WALLET, ' ');
+function norm(s) {
+  return stripWallet(s).toLowerCase()
+    .replace(/^\s*(sq|tst|sp|pp|paypal|py|dd|ic|bt|fsp|pos)\s?\*\s?/, '')
+    .replace(/[*#]/g, ' ').replace(/[^a-z0-9 ]+/g, ' ')
+    .split(/\s+/).map(w => w in ALIAS ? ALIAS[w] : w)
+    .filter((w, i) => w && !/\d/.test(w) && !NOISE.has(w) && (w.length > 2 || i === 0))
+    .join(' ');
+}
+function sim(a, b) {
+  if (!a || !b) return 0;
+  const ca = a.replace(/ /g, ''), cb = b.replace(/ /g, '');
+  if (ca === cb) return 1;
+  if (Math.min(ca.length, cb.length) >= 4 && (ca.includes(cb) || cb.includes(ca))) return 0.9;
+  const ta = [...new Set(a.split(' '))], tb = [...new Set(b.split(' '))];
+  let shared = 0;
+  for (const t of ta) {
+    if (tb.includes(t)) { shared++; continue; }
+    for (const u of tb) if (t.length >= 4 && u.length >= 4 && (t.startsWith(u) || u.startsWith(t))) { shared += 0.8; break; }
+  }
+  const s = shared / Math.min(ta.length, tb.length);
+  const p = ta[0].length >= 4 && tb[0].length >= 4 && ta[0].slice(0, 4) === tb[0].slice(0, 4) ? 0.6 : 0;
+  return Math.min(1, Math.max(s, p));
+}
+const titleCase = s => s.toLowerCase().replace(/(^|[\s\-\/*(.])([a-z])/g, (m, p, c) => p + c.toUpperCase());
+// Statement text for display: collapse padding and soften ALL-CAPS words. Short codes (CA, SQ)
+// and anything with digits (store numbers, phone numbers) are left alone.
+const prettyDesc = s => stripWallet(s).replace(/\s{2,}/g, ' ').trim().split(' ')
+  .map(w => /[a-z\d]/.test(w) || w.replace(/[^A-Z]/g, '').length < 3 ? w : titleCase(w)).join(' ');
+function cleanDesc(s) {
+  const t = stripWallet(s).trim().replace(/^\s*(sq|tst|sp|pp|paypal|py|dd|fsp)\s?\*\s?/i, '').replace(/\b(des|id|indn|ppd|co id)\s*:.*$/i, '').replace(/[#*]\S*/g, ' ')
+    .split(/\s+/).filter(w => w && !/\d{3,}/.test(w)).join(' ').trim().replace(/\s+[A-Z]{2}$/, '');
+  return titleCase(t || String(s || '')).slice(0, 50);
+}
+
+// ---------------- file parsing ----------------
+function parseCSV(text) {
+  text = text.replace(/^﻿/, '');
+  const head = text.split(/\r?\n/).slice(0, 10).join('\n');
+  const delim = [',', ';', '\t', '|'].map(d => [d, head.split(d).length]).sort((a, b) => b[1] - a[1])[0][0];
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === delim) { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  return rows.map(r => r.map(x => x.trim())).filter(r => r.some(x => x !== ''));
+}
+function pickCols(h) {
+  const find = (...res) => { for (const re of res) { const i = h.findIndex(x => re.test(x)); if (i >= 0) return i; } return -1; };
+  return {
+    date: find(/^trans(action)?\.? ?date/, /^date$/, /trans.*date/, /^(post(ed|ing)?) ?date/, /date/),
+    desc: find(/^description$/, /description/, /^payee/, /merchant/, /^name$/, /name/, /details/, /narrative/, /^memo$/),
+    amount: find(/^amount$/, /^amount/, /amount(?!.*bal)/),
+    debit: find(/debit/, /withdraw/, /^charge/),
+    credit: find(/^credit/, /credit(?!.*card)/, /deposit/),
+    type: find(/^type$/, /transaction type/, /debit\s*\/\s*credit|credit\s*\/\s*debit/),
+  };
+}
+function inferCols(rows) {
+  const sample = rows.slice(0, 50), n = Math.max(...sample.map(r => r.length));
+  const stats = [];
+  for (let c = 0; c < n; c++) {
+    const vals = sample.map(r => r[c] ?? '').filter(v => v !== '');
+    const k = vals.length || 1;
+    stats.push({
+      c,
+      date: vals.filter(v => parseDate(v)).length / k,
+      num: vals.filter(v => /^[\s$(\-+]*[\d,]+\.\d{2}\)?-?$/.test(v)).length / k,
+      len: vals.reduce((a, v) => a + v.length, 0) / k,
+    });
+  }
+  const date = (stats.find(s => s.date > 0.8) || {}).c ?? -1;
+  const amount = (stats.find(s => s.c !== date && s.num > 0.8) || {}).c ?? -1;
+  const desc = (stats.filter(s => s.c !== date && s.c !== amount && s.num < 0.5).sort((a, b) => b.len - a.len)[0] || {}).c ?? -1;
+  return { date, desc, amount, debit: -1, credit: -1, type: -1 };
+}
+function parseCSVTx(text) {
+  const rows = parseCSV(text);
+  let hi = -1;
+  for (let i = 0; i < Math.min(rows.length, 40); i++) {
+    const r = rows[i].map(x => x.toLowerCase());
+    if (r.some(x => /date/.test(x)) && r.some(x => /amount|debit|credit|withdraw|deposit/.test(x))) { hi = i; break; }
+  }
+  let cols, data, header;
+  if (hi >= 0) { cols = pickCols(rows[hi].map(x => x.toLowerCase())); data = rows.slice(hi + 1); header = rows[hi].join(','); }
+  else { cols = inferCols(rows); data = rows; header = `(no header, ${rows[0]?.length || 0} cols)`; }
+  if (cols.date < 0 || (cols.amount < 0 && cols.debit < 0 && cols.credit < 0)) throw new Error("Couldn't find date/amount columns");
+  const out = [];
+  for (const r of data) {
+    const date = parseDate(r[cols.date]);
+    if (!date) continue;
+    let amt;
+    if (cols.amount >= 0) amt = parseAmount(r[cols.amount]);
+    else {
+      const d = cols.debit >= 0 ? parseAmount(r[cols.debit]) : null, c = cols.credit >= 0 ? parseAmount(r[cols.credit]) : null;
+      if (d == null && c == null) continue;
+      amt = Math.abs(c || 0) - Math.abs(d || 0);
+    }
+    if (!amt) continue;
+    const desc = cols.desc >= 0 ? r[cols.desc] : r.filter((v, i) => i !== cols.date && i !== cols.amount).join(' ');
+    out.push({ date, amount: amt, desc, type: cols.type >= 0 ? (r[cols.type] || '').toLowerCase() : '' });
+  }
+  // Positive-only amounts with a Debit/Credit type column: sign comes from the type.
+  if (cols.amount >= 0 && cols.type >= 0 && out.every(x => x.amount > 0) && out.some(x => /debit|withdraw/.test(x.type)))
+    out.forEach(x => { if (/debit|withdraw|sale|purchase/.test(x.type)) x.amount = -x.amount; });
+  return { rows: out, header, kind: 'CSV' };
+}
+function parseOFX(text) {
+  const dec = s => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  const g = (b, t) => { const m = b.match(new RegExp('<' + t + '>([^<\\r\\n]*)', 'i')); return m ? dec(m[1].trim()) : ''; };
+  const rows = [];
+  for (const b0 of text.split(/<STMTTRN>/i).slice(1)) {
+    const b = b0.split(/<\/STMTTRN>/i)[0];
+    const date = parseDate(g(b, 'DTPOSTED')), amount = parseAmount(g(b, 'TRNAMT'));
+    if (!date || !amount) continue;
+    const name = g(b, 'NAME'), memo = g(b, 'MEMO');
+    rows.push({ date, amount, desc: memo && !name.includes(memo) ? `${name} ${memo}` : name, fitid: g(b, 'FITID') });
+  }
+  const acct = (text.match(/<ACCTID>([^<\r\n]+)/i) || [])[1] || '';
+  return { rows, header: 'OFX ' + acct.replace(/\D/g, '').slice(-4), kind: 'OFX' };
+}
+function parseFile(name, text) {
+  return /OFXHEADER|<OFX>|<STMTTRN>/i.test(text) ? parseOFX(text) : parseCSVTx(text);
+}
+const fileSig = f => f.header + '|' + f.name.replace(/\.[^.]+$/, '').toLowerCase()
+  .replace(/(?<!\d)(19|20)\d{2}[-_]?\d{2}[-_]?\d{2}(?!\d)/g, '').replace(/\(\d+\)/g, '').replace(/\d{5,}/g, '').replace(/[\s_\-]+/g, ' ').trim();
+
+function guessAccount(f) {
+  const map = LS.get('fileMap', {});
+  const open = S.accounts;
+  const remembered = map[f.sig] || map['hdr:' + f.header];
+  if (remembered && open.some(a => a.id === remembered.accountId)) return remembered;
+  const fours = [...(f.name + ' ' + f.header).matchAll(/(?<!\d)\d{4}(?!\d)/g)].map(m => m[0]);
+  for (const d of fours) { const a = open.find(a => (a.name + ' ' + (a.note || '')).includes(d)); if (a) return { accountId: a.id, sign: 'auto' }; }
+  const fn = norm(f.name.replace(/\.[^.]+$/, '').replace(/[_\-]/g, ' '));
+  let best = null, bs = 0;
+  for (const a of open) { const s = sim(fn, norm(a.name)); if (s > bs) { bs = s; best = a; } }
+  return { accountId: bs >= 0.5 ? best.id : '', sign: 'auto' };
+}
+function rememberFile(f) {
+  const map = LS.get('fileMap', {});
+  const v = { accountId: f.accountId, sign: f.sign };
+  map[f.sig] = v; map['hdr:' + f.header] = v;
+  LS.set('fileMap', map);
+}
+
+async function addFiles(list) {
+  for (const file of list) {
+    try {
+      const text = typeof file.text === 'function' ? await file.text() : file.content;
+      const p = parseFile(file.name, text);
+      if (!p.rows.length) { toast(`${file.name}: no transactions found`); continue; }
+      const f = { id: ++fileSeq, name: file.name, ...p };
+      f.sig = fileSig(f);
+      const dates = f.rows.map(r => r.date).sort();
+      f.min = dates[0]; f.max = dates[dates.length - 1];
+      Object.assign(f, guessAccount(f));
+      S.files.push(f);
+    } catch (e) { toast(`${file.name}: ${e.message}`, 6000); }
+  }
+  renderFiles();
+}
+
+// ---------------- YNAB API ----------------
+async function api(path, opts = {}) {
+  if (DEMO) return demoApi(path, opts);
+  const res = await fetch('https://api.ynab.com/v1' + path, { ...opts, headers: { Authorization: 'Bearer ' + S.token, 'Content-Type': 'application/json' } });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body?.error?.detail || `${res.status} ${res.statusText}`);
+  return body.data;
+}
+async function connect() {
+  S.token = $('#token').value.trim();
+  if (!S.token && !DEMO) return toast('Paste your YNAB token first');
+  if ($('#remember').checked) LS.set('token', S.token); else LS.del('token');
+  $('#btnConnect').disabled = true;
+  try {
+    const d = await api('/budgets');
+    S.budgets = d.budgets || d.plans || [];
+    const lock = LS.get('lockBudget', '');
+    if (lock) {
+      S.budgets = S.budgets.filter(b => b.id === lock);
+      if (!S.budgets.length) throw new Error('The plan this browser is locked to is not available with this token.');
+    }
+    $('#lock').checked = !!lock; $('#budget').disabled = !!lock;
+    const last = LS.get('budgetId', '');
+    $('#budget').innerHTML = S.budgets.map(b => `<option value="${b.id}" ${b.id === last ? 'selected' : ''}>${esc(b.name)}</option>`).join('');
+    $('#budgetRow').hidden = false;
+    $('#connectPanel').hidden = true; $('#btnToken').hidden = false; $('#filesSection').hidden = false;
+    await loadBudget($('#budget').value);
+  } catch (e) { toast('YNAB: ' + e.message, 6000); }
+  $('#btnConnect').disabled = false;
+}
+async function loadBudget(id) {
+  S.budgetId = id; LS.set('budgetId', id);
+  $('#budgetInfo').textContent = 'Loading…';
+  const b = `/budgets/${id}`;
+  const [acc, cats, pay] = await Promise.all([api(b + '/accounts'), api(b + '/categories'), api(b + '/payees')]);
+  const meta = S.budgets.find(x => x.id === id);
+  $('#planName').textContent = meta?.name || 'YNAB';
+  S.currency = meta?.currency_format?.iso_code || 'USD';
+  S.accounts = acc.accounts.filter(a => !a.deleted && !a.closed);
+  S.catGroups = cats.category_groups.filter(g => !g.deleted && !g.hidden)
+    .map(g => ({ name: g.name, cats: g.categories.filter(c => !c.deleted && !c.hidden && c.name !== 'Uncategorized') }))
+    .filter(g => g.cats.length);
+  S.catById = {}; S.catGroups.forEach(g => g.cats.forEach(c => S.catById[c.id] = c));
+  S.payees = pay.payees.filter(p => !p.deleted && !/^(Starting Balance|Manual Balance Adjustment|Reconciliation Balance Adjustment)$/.test(p.name))
+    .map(p => ({ ...p, n: norm(p.name) }));
+  $('#payeeList').innerHTML = S.payees.map(p => `<option value="${esc(p.name)}">`).join('');
+  $('#budgetInfo').textContent = '';
+  S.files.forEach(f => { if (!S.accounts.some(a => a.id === f.accountId)) Object.assign(f, guessAccount(f)); });
+  renderFiles();
+}
+
+// ---------------- matching ----------------
+// Dates may differ by up to `win` days either way (late posting, or logging a purchase a day late).
+// But a YNAB entry dated after the statement's last day hasn't posted yet, so it may only match a
+// bank row on or after its own date; otherwise a pending purchase steals an older identical one.
+const okGap = (b, y, win, max) => { const d = dayDiff(b.date, y.date); return Math.abs(d) <= win && (d >= 0 || y.date <= max); };
+// YNAB dated after the bank date is plausible but less likely, so it scores a bit worse.
+const gapScore = (b, y) => { const d = dayDiff(b.date, y.date); return d >= 0 ? d : 0.5 - d; };
+function matchRows(bank, ynab, win) {
+  const max = bank.reduce((m, b) => b.date > m ? b.date : m, '');
+  const byAmt = new Map();
+  ynab.forEach((y, j) => { if (!byAmt.has(y.amount)) byAmt.set(y.amount, []); byAmt.get(y.amount).push(j); });
+  const pairs = [];
+  bank.forEach((b, i) => {
+    for (const j of byAmt.get(b.amount) || []) {
+      const dd = gapScore(b, ynab[j]);
+      if (okGap(b, ynab[j], win, max)) pairs.push({ i, j, dd, s: Math.max(sim(b.n, ynab[j].n), sim(b.n, ynab[j].n2)) });
+    }
+  });
+  // Payee similarity is worth up to 3 days of date difference.
+  pairs.sort((p, q) => (p.dd - p.s * 3) - (q.dd - q.s * 3));
+  const bi = new Map(), used = new Set();
+  for (const p of pairs) { if (bi.has(p.i) || used.has(p.j)) continue; bi.set(p.i, p.j); used.add(p.j); }
+  // Uncross same-amount, same-payee pairs (e.g. daily coffees) so they pair up in date order.
+  const groups = new Map();
+  for (const [i, j] of bi) { const k = bank[i].amount + '|' + ynab[j].n; if (!groups.has(k)) groups.set(k, []); groups.get(k).push([i, j]); }
+  for (const g of groups.values()) {
+    if (g.length < 2) continue;
+    const is = g.map(p => p[0]).sort((a, b) => bank[a].date < bank[b].date ? -1 : 1);
+    const js = g.map(p => p[1]).sort((a, b) => ynab[a].date < ynab[b].date ? -1 : 1);
+    if (is.every((i, k) => okGap(bank[i], ynab[js[k]], win, max))) is.forEach((i, k) => bi.set(i, js[k]));
+  }
+  return bi;
+}
+function ynabFor(acct, min, max, win) {
+  return S.tx.filter(t => t.account_id === acct && !t.deleted && t.amount && t.date >= addDays(min, -win) && t.date <= addDays(max, win));
+}
+function resolveSign(f, win) {
+  if (f.sign === 'as-is') return 1;
+  if (f.sign === 'flip') return -1;
+  const y = ynabFor(f.accountId, f.min, f.max, win);
+  const rows = f.rows.map(r => ({ ...r, n: norm(r.desc) }));
+  const a = matchRows(rows, y, win).size;
+  const b = matchRows(rows.map(r => ({ ...r, amount: -r.amount })), y, win).size;
+  return b > a ? -1 : 1;
+}
+// No name/remembered hint: try every account (both signs) and take the one the file matches best.
+function guessByMatches(f, win) {
+  const rows = f.rows.map(r => ({ ...r, n: norm(r.desc) }));
+  let best = '', bn = 0;
+  for (const a of S.accounts) {
+    const y = ynabFor(a.id, f.min, f.max, win);
+    for (const s of [1, -1]) {
+      const n = matchRows(rows.map(r => ({ ...r, amount: r.amount * s })), y, win).size;
+      if (n > bn) { bn = n; best = a.id; }
+    }
+  }
+  if (bn >= Math.max(2, f.rows.length * 0.3)) { f.accountId = best; rememberFile(f); }
+}
+function suggestPayee(desc) {
+  const n = norm(desc);
+  const learned = LS.get('payeeMap', {})[n];
+  if (learned) return learned;
+  let best = null, bs = 0;
+  for (const p of S.payees) { if (p.transfer_account_id) continue; const s = sim(n, p.n); if (s > bs) { bs = s; best = p; } }
+  return bs >= 0.6 ? best.name : cleanDesc(desc);
+}
+function lastCategoryByPayee() {
+  const m = {};
+  [...S.tx].sort((a, b) => a.date < b.date ? 1 : -1).forEach(t => {
+    if (!t.payee_name || t.deleted || !t.category_id || t.transfer_account_id || t.subtransactions?.length) return;
+    if (!(t.payee_name in m) && S.catById[t.category_id]) m[t.payee_name] = t.category_id;
+  });
+  return m;
+}
+
+async function run() {
+  const win = Math.max(0, +$('#win').value || 0);
+  // Optional date range: only statement rows inside it are reconciled. Sign/account detection still uses the whole file.
+  const from = $('#from').value, to = $('#to').value;
+  if (!S.files.length) return;
+  $('#btnRun').disabled = true; $('#runInfo').textContent = 'Fetching YNAB transactions…';
+  try {
+    const min = S.files.map(f => f.min).sort()[0];
+    const d = await api(`/budgets/${S.budgetId}/transactions?since_date=${addDays(min, -120)}`);
+    S.tx = d.transactions.map(t => ({ ...t, n: norm(t.payee_name || t.memo), n2: norm(t.import_payee_name_original || '') }));
+    S.files.filter(f => !f.accountId).forEach(f => guessByMatches(f, win));
+    const files = S.files.filter(f => f.accountId);
+    if (!files.length) throw new Error("Couldn't tell which account the file(s) belong to. Pick one in the YNAB account column.");
+    const catByPayee = lastCategoryByPayee();
+    const R = { toClear: [], cleared: [], near: [], missing: [], ynabOnly: [], accounts: [] };
+
+    const byAcct = new Map();
+    for (const f of files) {
+      f.resolved = resolveSign(f, win);
+      if (!byAcct.has(f.accountId)) byAcct.set(f.accountId, []);
+      byAcct.get(f.accountId).push(f);
+    }
+    for (const [acct, fs] of byAcct) {
+      // Merge overlapping exports of the same account: keep the max count of each identical row across files.
+      const counts = new Map(), bank = [];
+      for (const f of fs) {
+        const local = new Map();
+        for (const r of f.rows) {
+          if ((from && r.date < from) || (to && r.date > to)) continue;
+          const row = { ...r, amount: r.amount * f.resolved, file: f.name };
+          const k = r.fitid || `${row.date}|${row.amount}|${r.desc}`;
+          local.set(k, (local.get(k) || 0) + 1);
+          if (local.get(k) > (counts.get(k) || 0)) { counts.set(k, local.get(k)); bank.push(row); }
+        }
+      }
+      if (!bank.length) continue;
+      bank.forEach(b => b.n = norm(b.desc));
+      const dates = bank.map(b => b.date).sort(), min = dates[0], max = dates[dates.length - 1];
+      const y = ynabFor(acct, min, max, win);
+      const m = matchRows(bank, y, win), usedY = new Set(m.values());
+      R.accounts.push({ acct, n: bank.length, matched: m.size, ynab: y.length });
+
+      bank.forEach((b, i) => {
+        if (!m.has(i)) return;
+        const t = y[m.get(i)];
+        const item = { acct, b, y: t, dd: dayDiff(b.date, t.date), on: true };
+        (t.cleared === 'uncleared' || !t.approved ? R.toClear : R.cleared).push(item);
+      });
+
+      // Near misses: same direction, similar payee, close date, different amount (tips, typos).
+      const ub = bank.map((b, i) => i).filter(i => !m.has(i));
+      const uy = y.map((t, j) => j).filter(j => !usedY.has(j));
+      const cand = [];
+      for (const i of ub) for (const j of uy) {
+        const b = bank[i], t = y[j];
+        if (Math.sign(b.amount) !== Math.sign(t.amount)) continue;
+        const dd = Math.abs(dayDiff(b.date, t.date)), s = Math.max(sim(b.n, t.n), sim(b.n, t.n2));
+        const diff = Math.abs(b.amount - t.amount);
+        if (okGap(b, t, win, max) && s >= 0.5 && diff <= Math.max(Math.abs(b.amount) * 0.5, 20000)) cand.push({ i, j, dd, s });
+      }
+      cand.sort((p, q) => (q.s - p.s) || (p.dd - q.dd));
+      const nb = new Set(), ny = new Set();
+      for (const c of cand) {
+        if (nb.has(c.i) || ny.has(c.j)) continue;
+        nb.add(c.i); ny.add(c.j);
+        const t = y[c.j], split = !!t.subtransactions?.length;
+        // Pre-tick only tip-sized differences; bigger gaps may be a different purchase.
+        const tipSized = Math.abs(bank[c.i].amount - t.amount) <= Math.abs(t.amount) * 0.3;
+        R.near.push({ acct, b: bank[c.i], y: t, split, on: !split && tipSized && c.s >= 0.7 && c.dd <= 2 });
+      }
+
+      for (const i of ub) {
+        if (nb.has(i)) continue;
+        const b = bank[i], payee = suggestPayee(b.desc);
+        R.missing.push({ acct, b, payee, categoryId: catByPayee[payee] || '', on: true });
+      }
+      uy.forEach(j => { if (!ny.has(j) && y[j].date >= min && y[j].date <= max) R.ynabOnly.push({ acct, y: y[j] }); });
+    }
+    const byDate = (a, b) => (a.b || a.y).date < (b.b || b.y).date ? -1 : 1;
+    ['toClear', 'cleared', 'near', 'missing', 'ynabOnly'].forEach(k => { R[k].sort(byDate); if (S.desc) R[k].reverse(); });
+    S.result = R;
+    $('#runInfo').textContent = R.accounts.length
+      ? R.accounts.map(a => `${R.accounts.length > 1 ? acctName(a.acct) + ': ' : ''}${a.matched} of ${a.n} matched`).join(' · ')
+      : 'No statement rows in that date range.';
+    S.tab = null;
+    renderFiles();
+    render();
+  } catch (e) { $('#runInfo').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  $('#btnRun').disabled = false;
+}
+
+// ---------------- rendering ----------------
+const acctName = id => S.accounts.find(a => a.id === id)?.name || '?';
+function renderFiles() {
+  const has = S.files.length > 0;
+  $('#fileTable').hidden = !has; $('#drop').hidden = has; $('#toolbar').hidden = !has && !DEMO;
+  const opts = sel => `<option value="">Choose account…</option>` + S.accounts.map(a => `<option value="${a.id}" ${a.id === sel ? 'selected' : ''}>${esc(a.name)}</option>`).join('');
+  $('#fileTable tbody').innerHTML = S.files.map(f => `<tr data-id="${f.id}">
+    <td><div class="desc" title="${esc(f.name)}">${esc(f.name)}</div></td>
+    <td class="num">${f.rows.length}</td>
+    <td class="date">${fmtDate(f.min)} – ${fmtDate(f.max)}</td>
+    <td><select data-f="account">${opts(f.accountId)}</select></td>
+    <td><select data-f="sign" title="Whether charges are negative in this file">
+      <option value="auto" ${f.sign === 'auto' ? 'selected' : ''}>Detect${f.sign === 'auto' && f.resolved ? (f.resolved < 0 ? ': flipped' : ': as is') : ''}</option>
+      <option value="as-is" ${f.sign === 'as-is' ? 'selected' : ''}>As is</option>
+      <option value="flip" ${f.sign === 'flip' ? 'selected' : ''}>Flipped</option></select></td>
+    <td class="num"><button class="x" data-f="remove" title="Remove file" aria-label="Remove file">✕</button></td></tr>`).join('');
+  $('#btnRun').disabled = !has || !S.accounts.length;
+  if (has) {
+    const lo = S.files.map(f => f.min).sort()[0], hi = S.files.map(f => f.max).sort().at(-1);
+    ['#from', '#to'].forEach(s => { $(s).min = lo; $(s).max = hi; });
+  }
+}
+function catSelect(sel, disabled) {
+  return `<select data-k="cat" ${disabled ? 'disabled' : ''}><option value="">Uncategorized</option>` +
+    S.catGroups.map(g => `<optgroup label="${esc(g.name)}">` + g.cats.map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.name)}</option>`).join('') + '</optgroup>').join('') + '</select>';
+}
+const isTransferPayee = name => S.payees.some(p => p.name === name && p.transfer_account_id);
+const TABS = [
+  ['missing', 'Missing from YNAB', 'On the statement but not in YNAB. Ticked rows are created as cleared.'],
+  ['near', 'Amount differs', 'Same purchase, different amount (often a tip). Ticked rows get the bank amount.'],
+  ['toClear', 'To clear', 'In both places but not cleared yet. Ticked rows get marked cleared.'],
+  ['ynabOnly', 'Only in YNAB', 'Not on the statement: still pending, a duplicate, or entered wrong. Nothing changes.'],
+  ['cleared', 'Already cleared', 'In both places and already cleared. Nothing changes.'],
+];
+function render() {
+  const R = S.result;
+  $('#results').hidden = false; $('#applybar').hidden = false;
+  if (!S.tab) S.tab = (TABS.find(([k]) => R[k].length) || TABS[0])[0];
+  const actionable = ['missing', 'near', 'toClear'];
+  $('#tabs').innerHTML = TABS.map(([k, label]) => `<button class="tab ${k === S.tab ? 'on' : ''} ${actionable.includes(k) && R[k].length ? 'todo' : ''}" data-tab="${k}">${label}<span class="n">${R[k].length}</span></button>`).join('');
+  const [key, , note] = TABS.find(([k]) => k === S.tab);
+  const items = R[key];
+  $('#tabNote').textContent = items.length ? note : 'Nothing here.';
+
+  const multi = new Set(R.accounts.map(a => a.acct)).size > 1;
+  const sel = key !== 'ynabOnly' && key !== 'cleared';
+  const cb = (i, x, dis) => sel ? `<td><input type="checkbox" data-k="${key}" data-i="${i}" ${x.on ? 'checked' : ''} ${dis ? 'disabled' : ''}></td>` : '';
+  const acc = x => multi ? `<td class="muted desc">${esc(acctName(x.acct))}</td>` : '';
+  const bank = b => `<td class="date">${fmtDate(b.date)}</td><td><div class="desc" title="${esc(b.desc)}">${esc(prettyDesc(b.desc))}</div></td>`;
+  const ynab = y => `<td class="date">${fmtDate(y.date)}</td><td><div class="desc">${esc(y.payee_name || '')}${y.memo ? ` <span class="muted">· ${esc(y.memo)}</span>` : ''}</div></td>`;
+  const th = cols => `<tr>${sel ? `<th><input type="checkbox" data-all="${key}" ${items.every(x => x.on || x.split) ? 'checked' : ''} aria-label="Select all"></th>` : ''}${multi ? '<th>Account</th>' : ''}${cols.replace('<th>Date</th>',
+    `<th><button class="sort" data-sort title="Toggle date order">Date <span aria-hidden="true">${S.desc ? '↓' : '↑'}</span><span class="sr">${S.desc ? 'newest first' : 'oldest first'}</span></button></th>`)}</tr>`;
+
+  let head = '', rows = [];
+  if (key === 'missing') {
+    head = th('<th>Date</th><th>Statement</th><th class="num">Amount</th><th>Payee</th><th>Category</th>');
+    rows = items.map((x, i) => { const tr = isTransferPayee(x.payee); return `<tr data-k="missing" data-i="${i}" class="${x.on ? '' : 'off'}">${cb(i, x)}${acc(x)}${bank(x.b)}<td class="num">${money(x.b.amount)}</td>
+      <td><input type="text" list="payeeList" data-k="payee" value="${esc(x.payee)}"></td><td>${catSelect(x.categoryId, tr)}${tr ? '<span class="flag">transfer</span>' : ''}</td></tr>`; });
+  } else if (key === 'near') {
+    head = th('<th>Date</th><th>Statement</th><th class="num">Bank</th><th>YNAB date</th><th>YNAB payee</th><th class="num">YNAB</th><th class="num">Diff</th>');
+    rows = items.map((x, i) => `<tr class="${x.on ? '' : 'off'}">${cb(i, x, x.split)}${acc(x)}${bank(x.b)}<td class="num">${money(x.b.amount)}</td>${ynab(x.y)}<td class="num">${money(x.y.amount)}${x.split ? '<span class="flag">split, fix in YNAB</span>' : ''}</td><td class="num">${money(x.b.amount - x.y.amount)}</td></tr>`);
+  } else if (key === 'ynabOnly') {
+    head = th('<th>Date</th><th>Payee</th><th class="num">Amount</th><th>Status</th>');
+    rows = items.map(x => `<tr>${acc(x)}${ynab(x.y)}<td class="num">${money(x.y.amount)}</td><td class="muted">${x.y.cleared}</td></tr>`);
+  } else {
+    head = th('<th>Date</th><th>Statement</th><th class="num">Amount</th><th>YNAB date</th><th>YNAB payee</th>');
+    rows = items.map((x, i) => `<tr class="${!sel || x.on ? '' : 'off'}">${cb(i, x)}${acc(x)}${bank(x.b)}<td class="num">${money(x.b.amount)}</td>${ynab(x.y)}</tr>`);
+  }
+  $('#sections').innerHTML = items.length ? `<table class="tbl"><thead>${head}</thead><tbody>${rows.join('')}</tbody></table>` : '';
+  updateApplyInfo();
+}
+function counts() {
+  const R = S.result;
+  return { create: R.missing.filter(x => x.on).length, fix: R.near.filter(x => x.on && !x.split).length, clear: R.toClear.filter(x => x.on).length };
+}
+function updateApplyInfo() {
+  if (!S.result) return;
+  const c = counts(), total = c.create + c.fix + c.clear;
+  const parts = [c.create && `create ${c.create}`, c.fix && `fix ${c.fix} amount${c.fix > 1 ? 's' : ''}`, c.clear && `clear ${c.clear}`].filter(Boolean);
+  $('#applyInfo').textContent = parts.length ? parts.join(' · ').replace(/^./, s => s.toUpperCase()) : 'Nothing selected';
+  $('#btnApply').disabled = !total;
+}
+
+// ---------------- apply ----------------
+async function apply() {
+  const R = S.result, c = counts();
+  const lock = LS.get('lockBudget', '');
+  if (lock && lock !== S.budgetId) return toast('This browser is locked to a different plan. Nothing was changed.', 6000);
+  const budget = S.budgets.find(b => b.id === S.budgetId)?.name || 'budget';
+  if (!confirm(`Apply to "${budget}"?\n\n• Create ${c.create} transactions\n• Fix ${c.fix} amounts\n• Mark ${c.clear} cleared`)) return;
+  const patches = [
+    ...R.toClear.filter(x => x.on).map(x => ({ id: x.y.id, cleared: 'cleared', approved: true })),
+    ...R.near.filter(x => x.on && !x.split).map(x => ({ id: x.y.id, amount: x.b.amount, cleared: 'cleared', approved: true })),
+  ];
+  const payeeMap = LS.get('payeeMap', {}), transfers = [], creates = [];
+  let skipped = 0;
+  for (const x of R.missing.filter(x => x.on)) {
+    const p = S.payees.find(p => p.name === x.payee);
+    if (p?.transfer_account_id) {
+      // The other side of a transfer gets created automatically; don't create it twice.
+      const dup = transfers.some(t => t.acct === p.transfer_account_id && t.other === x.acct && t.amount === -x.b.amount && Math.abs(dayDiff(t.date, x.b.date)) <= 5);
+      if (dup) { skipped++; continue; }
+      transfers.push({ acct: x.acct, other: p.transfer_account_id, amount: x.b.amount, date: x.b.date });
+    }
+    // No import_id: YNAB would treat it as a bank import and auto-match it to other entries on its own.
+    const t = { account_id: x.acct, date: x.b.date, amount: x.b.amount, cleared: 'cleared', approved: true };
+    if (p) t.payee_id = p.id; else if (x.payee.trim()) t.payee_name = x.payee.trim().slice(0, 200);
+    t.category_id = p?.transfer_account_id ? null : (x.categoryId || null);
+    creates.push(t);
+    if (x.payee.trim()) payeeMap[norm(x.b.desc)] = x.payee.trim();
+  }
+  $('#btnApply').disabled = true;
+  try {
+    const path = `/budgets/${S.budgetId}/transactions`;
+    for (let i = 0; i < patches.length; i += 100) await api(path, { method: 'PATCH', body: JSON.stringify({ transactions: patches.slice(i, i + 100) }) });
+    for (let i = 0; i < creates.length; i += 100) await api(path, { method: 'POST', body: JSON.stringify({ transactions: creates.slice(i, i + 100) }) });
+    LS.set('payeeMap', payeeMap);
+    toast(`Done: ${creates.length} created, ${patches.length} updated` + (skipped ? `, ${skipped} transfer halves left to YNAB` : ''), 7000);
+    await run();
+  } catch (e) { toast('YNAB: ' + e.message, 8000); $('#btnApply').disabled = false; }
+}
+
+// ---------------- events ----------------
+$('#btnConnect').onclick = connect;
+$('#token').onkeydown = e => { if (e.key === 'Enter') connect(); };
+$('#budget').onchange = e => loadBudget(e.target.value).catch(err => toast('YNAB: ' + err.message));
+$('#lock').onchange = e => {
+  if (e.target.checked) {
+    const name = S.budgets.find(b => b.id === S.budgetId)?.name;
+    if (!confirm(`Lock this browser to "${name}"? Other plans will be hidden here.`)) { e.target.checked = false; return; }
+    LS.set('lockBudget', S.budgetId);
+  } else {
+    if (!confirm('Unlock and show all plans again?')) { e.target.checked = true; return; }
+    LS.del('lockBudget');
+  }
+  connect();
+};
+$('#btnRun').onclick = run;
+$('#btnApply').onclick = apply;
+const drop = $('#drop');
+drop.onclick = () => $('#fileInput').click();
+drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') $('#fileInput').click(); };
+$('#btnAdd').onclick = () => $('#fileInput').click();
+$('#fileInput').onchange = e => { addFiles([...e.target.files]); e.target.value = ''; };
+// The whole page is a drop target once connected.
+let dragDepth = 0;
+const canDrop = e => !$('#filesSection').hidden && e.dataTransfer?.types?.includes('Files');
+document.addEventListener('dragenter', e => { if (canDrop(e)) { dragDepth++; document.body.classList.add('dragging'); } });
+document.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
+document.addEventListener('dragover', e => { if (canDrop(e)) e.preventDefault(); });
+document.addEventListener('drop', e => {
+  if (!canDrop(e)) return;
+  e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging');
+  addFiles([...e.dataTransfer.files]);
+});
+$('#btnToken').onclick = () => { $('#connectPanel').hidden = !$('#connectPanel').hidden; };
+// Date header toggles oldest/newest first. Arrays are reversed in place so row indices stay valid.
+S.desc = LS.get('sortDesc', false);
+$('#sections').addEventListener('click', e => {
+  if (!e.target.closest('[data-sort]')) return;
+  S.desc = !S.desc; LS.set('sortDesc', S.desc);
+  ['toClear', 'cleared', 'near', 'missing', 'ynabOnly'].forEach(k => S.result[k].reverse());
+  render();
+});
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { S.tab = b.dataset.tab; render(); } });
+const onRange = () => {
+  $('#btnAllDates').hidden = !$('#from').value && !$('#to').value;
+  if (S.result) run();
+};
+$('#from').onchange = onRange;
+$('#to').onchange = onRange;
+$('#btnAllDates').onclick = () => { $('#from').value = ''; $('#to').value = ''; onRange(); };
+$('#stamp').textContent = new Date().toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+$('#fileTable').addEventListener('change', e => {
+  const f = S.files.find(f => f.id === +e.target.closest('tr').dataset.id);
+  if (e.target.dataset.f === 'account') f.accountId = e.target.value;
+  if (e.target.dataset.f === 'sign') { f.sign = e.target.value; f.resolved = 0; }
+  if (f.accountId) rememberFile(f);
+  renderFiles();
+});
+$('#fileTable').addEventListener('click', e => {
+  if (e.target.dataset.f !== 'remove') return;
+  S.files = S.files.filter(f => f.id !== +e.target.closest('tr').dataset.id);
+  renderFiles();
+});
+$('#sections').addEventListener('change', e => {
+  const t = e.target, R = S.result;
+  if (t.dataset.all) { R[t.dataset.all].forEach(x => { if (!x.split) x.on = t.checked; }); render(); return; }
+  if (t.dataset.i != null && R[t.dataset.k]) { R[t.dataset.k][+t.dataset.i].on = t.checked; updateApplyInfo(); return; }
+  const tr = t.closest('tr[data-k="missing"]');
+  if (!tr) return;
+  const x = R.missing[+tr.dataset.i];
+  if (t.dataset.k === 'cat') x.categoryId = t.value;
+  if (t.dataset.k === 'payee') {
+    x.payee = t.value;
+    const cat = lastCategoryByPayee()[x.payee];
+    if (cat && !x.categoryId) x.categoryId = cat;
+    render();
+  }
+});
+
+const saved = LS.get('token', '');
+if (saved) { $('#token').value = saved; $('#remember').checked = true; connect(); }
+
+// ---------------- demo mode (?demo) ----------------
+let demoDb;
+function demoApi(path, opts) {
+  if (!demoDb) {
+    const T = (id, account_id, date, amount, payee_name, category_id, cleared = 'uncleared', extra = {}) => ({ id, account_id, date, amount, payee_name, category_id, cleared, approved: true, deleted: false, memo: null, import_id: null, transfer_account_id: null, subtransactions: [], ...extra });
+    demoDb = {
+      budgets: [{ id: 'b1', name: 'Demo Budget', currency_format: { iso_code: 'USD' } }],
+      accounts: [{ id: 'chk', name: 'Checking', type: 'checking' }, { id: 'amex', name: 'Amex Gold 1008', type: 'creditCard' }],
+      category_groups: [{ name: 'Internal Master Category', categories: [{ id: 'rta', name: 'Inflow: Ready to Assign' }] },
+        { name: 'Everyday', categories: [{ id: 'groc', name: 'Groceries' }, { id: 'dine', name: 'Dining Out' }, { id: 'gas', name: 'Gas' }] },
+        { name: 'Bills', categories: [{ id: 'subs', name: 'Subscriptions' }, { id: 'rent', name: 'Rent' }] }],
+      payees: [['p1', 'Blue Bottle'], ['p2', "Trader Joe's"], ['p3', 'Shell'], ['p4', 'Netflix'], ['p5', 'Acme Corp'], ['p6', 'Landlord'], ['p7', 'Chipotle'],
+        ['t1', 'Transfer : Amex Gold 1008', 'amex'], ['t2', 'Transfer : Checking', 'chk']].map(([id, name, tr]) => ({ id, name, transfer_account_id: tr || null, deleted: false })),
+      transactions: [
+        T('y0', 'amex', '2026-08-02', -8000, "Trader Joe's", 'groc', 'reconciled'),
+        T('y00', 'amex', '2026-08-20', -15490, 'Netflix', 'subs', 'reconciled'),
+        T('y1', 'amex', '2026-10-01', -6450, 'Blue Bottle', 'dine', 'cleared'),
+        T('y2', 'amex', '2026-10-02', -84210, "Trader Joe's", 'groc'),
+        T('y3', 'amex', '2026-10-05', -45000, 'Chipotle', 'dine'),
+        T('y4', 'amex', '2026-10-07', -52300, 'Shell', 'gas'),
+        T('y5', 'amex', '2026-10-09', -12000, 'Blue Bottle', 'dine'),
+        T('y6', 'chk', '2026-10-01', 2500000, 'Acme Corp', 'rta', 'cleared'),
+        T('y7', 'chk', '2026-10-03', -1800000, 'Landlord', 'rent'),
+        T('y8', 'chk', '2026-10-06', -3000000, 'Transfer : Amex Gold 1008', null, 'uncleared', { transfer_account_id: 'amex' }),
+        T('y8b', 'amex', '2026-10-06', 3000000, 'Transfer : Checking', null, 'uncleared', { transfer_account_id: 'chk' }),
+      ],
+    };
+  }
+  const db = demoDb;
+  const b = opts.body ? JSON.parse(opts.body) : null;
+  const ok = v => new Promise(r => setTimeout(() => r(JSON.parse(JSON.stringify(v))), 150));
+  if (path === '/budgets') return ok({ budgets: db.budgets });
+  if (/\/accounts$/.test(path)) return ok({ accounts: db.accounts });
+  if (/\/categories$/.test(path)) return ok({ category_groups: db.category_groups });
+  if (/\/payees$/.test(path)) return ok({ payees: db.payees });
+  if (opts.method === 'PATCH') { b.transactions.forEach(u => Object.assign(db.transactions.find(t => t.id === u.id), u)); return ok({}); }
+  if (opts.method === 'POST') {
+    const dup = [];
+    b.transactions.forEach(t => {
+      if (db.transactions.some(x => x.import_id && x.import_id === t.import_id && x.account_id === t.account_id)) return dup.push(t.import_id);
+      const p = db.payees.find(p => p.id === t.payee_id) || db.payees.find(p => p.name === t.payee_name) || (t.payee_name && (db.payees.push({ id: 'p' + db.payees.length, name: t.payee_name, deleted: false }), db.payees.at(-1)));
+      db.transactions.push({ id: 'n' + db.transactions.length, deleted: false, memo: null, subtransactions: [], transfer_account_id: p?.transfer_account_id || null, ...t, payee_name: p?.name || null });
+    });
+    return ok({ duplicate_import_ids: dup });
+  }
+  if (/\/transactions/.test(path)) { const since = path.split('since_date=')[1]; return ok({ transactions: db.transactions.filter(t => t.date >= since) }); }
+  return Promise.reject(new Error('demo: unknown ' + path));
+}
+const SAMPLES = [
+  { name: 'activity_amex.csv', content: `Date,Description,Amount
+10/01/2026,BLUE BOTTLE COFFEE OAKLAND CA,6.45
+10/02/2026,TRADER JOE'S #123 OAKLAND CA,84.21
+10/05/2026,CHIPOTLE 2291,52.75
+10/06/2026,ONLINE PAYMENT - THANK YOU,-3000.00
+10/07/2026,SHELL OIL 57444,52.30
+10/10/2026,NETFLIX.COM,15.49
+10/11/2026,SQ *BLUE BOTTLE COFFEE,6.45
+` },
+  { name: 'Checking_Statement.csv', content: `Description,,Summary Amt.
+Beginning balance as of 10/01/2026,,"5,000.00"
+Ending balance as of 10/12/2026,,"4,200.00"
+
+Date,Description,Amount,Running Bal.
+10/01/2026,"ACME CORP DES:PAYROLL ID:XXXX","2,500.00","7,500.00"
+10/03/2026,"LANDLORD PROPERTY MGMT","-1,800.00","5,700.00"
+10/06/2026,"AMEX EPAYMENT DES:ACH PMT","-3,000.00","2,700.00"
+10/09/2026,"VENMO DES:PAYMENT","-40.00","2,660.00"
+` },
+];
+if (DEMO) {
+  $('#btnSample').hidden = false;
+  $('#token').value = 'demo';
+  $('#btnSample').onclick = () => addFiles(SAMPLES);
+}
+</script>
+</body>
+</html>
