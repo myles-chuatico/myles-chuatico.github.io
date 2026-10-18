@@ -93,6 +93,9 @@ main>section{background:var(--bg);box-shadow:0 0 0 16px var(--bg)}
 #fileTable tr.check>td{background:var(--fill);padding:14px 16px 18px}
 #fileTable tr.check p{margin:0 0 10px}
 .warn{color:var(--warn)}
+.tbl tr.del td:not(:first-child){color:#b3261e;text-decoration:line-through;text-decoration-thickness:1px}
+.hints span{display:inline-block;font-size:13.5px;color:var(--warn);margin-right:10px;white-space:nowrap}
+.tbl tr.del .hints span{text-decoration:none}
 .ok{color:var(--green)}
 .skip{margin:0 0 14px;padding-left:20px}
 .skip li span{font-variant-numeric:tabular-nums}
@@ -163,6 +166,7 @@ main>section{background:var(--bg);box-shadow:0 0 0 16px var(--bg)}
     <div class="toolbar" id="toolbar" hidden>
       <button id="btnRun" class="primary" disabled>Reconcile</button>
       <button id="btnAdd" class="link">Add files</button>
+      <button id="btnUndo" class="link" hidden>Undo last delete</button>
       <button class="link" data-paste>Paste</button>
       <button id="btnSample" class="link" hidden>Load sample files</button>
       <span class="chk">Dates <input id="from" type="date" aria-label="From date"> to <input id="to" type="date" aria-label="To date"> <button id="btnAllDates" class="link" hidden>All dates</button></span>
@@ -681,6 +685,7 @@ async function loadBudget(id) {
   S.payees = pay.payees.filter(p => !p.deleted && !/^(Starting Balance|Manual Balance Adjustment|Reconciliation Balance Adjustment)$/.test(p.name))
     .map(p => ({ ...p, n: norm(p.name) }));
   $('#budgetInfo').textContent = '';
+  renderUndo();
   S.files.forEach(f => { if (!S.accounts.some(a => a.id === f.accountId)) Object.assign(f, guessAccount(f)); });
   renderFiles();
 }
@@ -838,7 +843,19 @@ async function run() {
         const b = bank[i], payee = suggestPayee(b.desc);
         R.missing.push({ acct, b, payee, categoryId: catByPayee[payee] || '', on: true });
       }
-      uy.forEach(j => { if (!ny.has(j) && y[j].date >= min && y[j].date <= max) R.ynabOnly.push({ acct, y: y[j] }); });
+      // YNAB-only rows can be deleted, never by default. Hints say why a row might (or might not) be wrong.
+      const matchedY = [...usedY].map(j => y[j]);
+      uy.forEach(j => {
+        const t = y[j];
+        if (ny.has(j) || t.date < min || t.date > max) return;
+        const hints = [];
+        if (matchedY.some(o => o.amount === t.amount && Math.abs(dayDiff(o.date, t.date)) <= win + 3 && Math.max(sim(o.n, t.n), o.payee_id === t.payee_id ? 1 : 0) >= 0.7)) hints.push('Looks like a duplicate');
+        if (dayDiff(max, t.date) <= 3) hints.push('May still be pending');
+        if (t.cleared === 'cleared') hints.push('Marked cleared, but not on the statement');
+        if (t.transfer_account_id) hints.push('Transfer: deleting removes both sides');
+        if (t.cleared === 'reconciled') hints.push('Reconciled: fix in YNAB');
+        R.ynabOnly.push({ acct, y: t, on: false, locked: t.cleared === 'reconciled', hints });
+      });
     }
     const byDate = (a, b) => (a.b || a.y).date < (b.b || b.y).date ? -1 : 1;
     ['toClear', 'cleared', 'near', 'missing', 'ynabOnly'].forEach(k => { R[k].sort(byDate); if (S.desc) R[k].reverse(); });
@@ -908,7 +925,7 @@ const TABS = [
   ['missing', 'Missing from YNAB', 'On the statement but not in YNAB. Ticked rows are created as cleared.'],
   ['near', 'Amount differs', 'Same purchase, different amount (often a tip). Ticked rows get the bank amount.'],
   ['toClear', 'To clear', 'In both places but not cleared yet. Ticked rows get marked cleared.'],
-  ['ynabOnly', 'Only in YNAB', 'Not on the statement: still pending, a duplicate, or entered wrong. Nothing changes.'],
+  ['ynabOnly', 'Only in YNAB', 'In YNAB but not on the statement: still pending, a duplicate, or entered wrong. Tick only the ones you want deleted from YNAB.'],
   ['cleared', 'Already cleared', 'In both places and already cleared. Nothing changes.'],
 ];
 function render() {
@@ -922,12 +939,13 @@ function render() {
   $('#tabNote').textContent = items.length ? note : 'Nothing here.';
 
   const multi = new Set(R.accounts.map(a => a.acct)).size > 1;
-  const sel = key !== 'ynabOnly' && key !== 'cleared';
+  const sel = key !== 'cleared';
   const cb = (i, x, dis) => sel ? `<td><input type="checkbox" data-k="${key}" data-i="${i}" ${x.on ? 'checked' : ''} ${dis ? 'disabled' : ''}></td>` : '';
   const acc = x => multi ? `<td class="muted desc">${esc(acctName(x.acct))}</td>` : '';
   const bank = b => `<td class="date">${fmtDate(b.date)}</td><td><div class="desc" title="${esc(b.desc)}">${esc(prettyDesc(b.desc))}</div></td>`;
   const ynab = y => `<td class="date">${fmtDate(y.date)}</td><td><div class="desc">${esc(y.payee_name || '')}${y.memo ? ` <span class="muted">· ${esc(y.memo)}</span>` : ''}</div></td>`;
-  const th = cols => `<tr>${sel ? `<th><input type="checkbox" data-all="${key}" ${items.every(x => x.on || x.split) ? 'checked' : ''} aria-label="Select all"></th>` : ''}${multi ? '<th>Account</th>' : ''}${cols.replace('<th>Date</th>',
+  // No select-all for deletes: each one is ticked on purpose.
+  const th = cols => `<tr>${sel ? (key === 'ynabOnly' ? '<th><span class="sr">Delete</span></th>' : `<th><input type="checkbox" data-all="${key}" ${items.every(x => x.on || x.split) ? 'checked' : ''} aria-label="Select all"></th>`) : ''}${multi ? '<th>Account</th>' : ''}${cols.replace('<th>Date</th>',
     `<th><button class="sort" data-sort title="Toggle date order">Date <span aria-hidden="true">${S.desc ? '↓' : '↑'}</span><span class="sr">${S.desc ? 'newest first' : 'oldest first'}</span></button></th>`)}</tr>`;
 
   let head = '', rows = [];
@@ -939,8 +957,8 @@ function render() {
     head = th('<th>Date</th><th>Statement</th><th class="num">Bank</th><th>YNAB date</th><th>YNAB payee</th><th class="num">YNAB</th><th class="num">Diff</th>');
     rows = items.map((x, i) => `<tr class="${x.on ? '' : 'off'}">${cb(i, x, x.split)}${acc(x)}${bank(x.b)}<td class="num">${money(x.b.amount)}</td>${ynab(x.y)}<td class="num">${money(x.y.amount)}${x.split ? '<span class="flag">split, fix in YNAB</span>' : ''}</td><td class="num">${money(x.b.amount - x.y.amount)}</td></tr>`);
   } else if (key === 'ynabOnly') {
-    head = th('<th>Date</th><th>Payee</th><th class="num">Amount</th><th>Status</th>');
-    rows = items.map(x => `<tr>${acc(x)}${ynab(x.y)}<td class="num">${money(x.y.amount)}</td><td class="muted">${x.y.cleared}</td></tr>`);
+    head = th('<th>Date</th><th>Payee</th><th class="num">Amount</th><th>Status</th><th>Why it might be here</th>');
+    rows = items.map((x, i) => `<tr class="${x.on ? 'del' : ''}">${cb(i, x, x.locked)}${acc(x)}${ynab(x.y)}<td class="num">${money(x.y.amount)}</td><td class="muted">${x.y.cleared}</td><td class="hints">${x.hints.map(h => `<span>${esc(h)}</span>`).join('')}</td></tr>`);
   } else {
     head = th('<th>Date</th><th>Statement</th><th class="num">Amount</th><th>YNAB date</th><th>YNAB payee</th>');
     rows = items.map((x, i) => `<tr class="${!sel || x.on ? '' : 'off'}">${cb(i, x)}${acc(x)}${bank(x.b)}<td class="num">${money(x.b.amount)}</td>${ynab(x.y)}</tr>`);
@@ -950,23 +968,50 @@ function render() {
 }
 function counts() {
   const R = S.result;
-  return { create: R.missing.filter(x => x.on).length, fix: R.near.filter(x => x.on && !x.split).length, clear: R.toClear.filter(x => x.on).length };
+  return { create: R.missing.filter(x => x.on).length, fix: R.near.filter(x => x.on && !x.split).length, clear: R.toClear.filter(x => x.on).length, del: R.ynabOnly.filter(x => x.on && !x.locked).length };
 }
 function updateApplyInfo() {
   if (!S.result) return;
-  const c = counts(), total = c.create + c.fix + c.clear;
-  const parts = [c.create && `create ${c.create}`, c.fix && `fix ${c.fix} amount${c.fix > 1 ? 's' : ''}`, c.clear && `clear ${c.clear}`].filter(Boolean);
+  const c = counts(), total = c.create + c.fix + c.clear + c.del;
+  const parts = [c.create && `create ${c.create}`, c.fix && `fix ${c.fix} amount${c.fix > 1 ? 's' : ''}`, c.clear && `clear ${c.clear}`, c.del && `delete ${c.del}`].filter(Boolean);
   $('#applyInfo').textContent = parts.length ? parts.join(' · ').replace(/^./, s => s.toUpperCase()) : 'Nothing selected';
   $('#btnApply').disabled = !total;
 }
 
 // ---------------- apply ----------------
+// What's needed to recreate a deleted transaction. A transfer is recreated from its payee, which brings back both sides.
+const undoCopy = t => ({
+  account_id: t.account_id, date: t.date, amount: t.amount, payee_id: t.payee_id || null, payee_name: t.payee_id ? undefined : t.payee_name || undefined,
+  category_id: t.transfer_account_id || t.subtransactions?.length ? null : t.category_id || null, memo: t.memo || null,
+  cleared: t.cleared, approved: true, flag_color: t.flag_color || null,
+  subtransactions: (t.subtransactions || []).filter(s => !s.deleted).map(s => ({ amount: s.amount, payee_id: s.payee_id || null, category_id: s.category_id || null, memo: s.memo || null })),
+});
+function renderUndo() {
+  const u = LS.get('lastDeleted', null);
+  $('#btnUndo').hidden = !(u && u.budgetId === S.budgetId && u.tx?.length);
+  if (u?.tx) $('#btnUndo').textContent = `Undo last delete (${u.tx.length})`;
+}
+async function undoDelete() {
+  const u = LS.get('lastDeleted', null);
+  if (!u || u.budgetId !== S.budgetId) return;
+  if (!confirm(`Put back the ${u.tx.length} transaction${u.tx.length > 1 ? 's' : ''} deleted on ${new Date(u.at).toLocaleString()}?`)) return;
+  try {
+    await api(`/budgets/${S.budgetId}/transactions`, { method: 'POST', body: JSON.stringify({ transactions: u.tx.map(t => ({ ...t, subtransactions: t.subtransactions.length ? t.subtransactions : undefined })) }) });
+    LS.del('lastDeleted'); renderUndo();
+    toast(`Put back ${u.tx.length}.`);
+    if (S.result) await run();
+  } catch (e) { toast('YNAB: ' + e.message, 8000); }
+}
 async function apply() {
   const R = S.result, c = counts();
   const lock = LS.get('lockBudget', '');
   if (lock && lock !== S.budgetId) return toast('This browser is locked to a different plan. Nothing was changed.', 6000);
   const budget = S.budgets.find(b => b.id === S.budgetId)?.name || 'budget';
-  if (!confirm(`Apply to "${budget}"?\n\n• Create ${c.create} transactions\n• Fix ${c.fix} amounts\n• Mark ${c.clear} cleared`)) return;
+  if (!confirm(`Apply to "${budget}"?\n\n• Create ${c.create} transactions\n• Fix ${c.fix} amounts\n• Mark ${c.clear} cleared` +
+    (c.del ? `\n• DELETE ${c.del} transaction${c.del > 1 ? 's' : ''} from YNAB (you can undo this from this page)` : ''))) return;
+  // Deleting one side of a transfer deletes the other, so never send both.
+  const dels = [];
+  for (const x of R.ynabOnly.filter(x => x.on && !x.locked)) if (!dels.some(d => d.transfer_transaction_id === x.y.id)) dels.push(x.y);
   const patches = [
     ...R.toClear.filter(x => x.on).map(x => ({ id: x.y.id, cleared: 'cleared', approved: true })),
     ...R.near.filter(x => x.on && !x.split).map(x => ({ id: x.y.id, amount: x.b.amount, cleared: 'cleared', approved: true })),
@@ -994,7 +1039,12 @@ async function apply() {
     for (let i = 0; i < patches.length; i += 100) await api(path, { method: 'PATCH', body: JSON.stringify({ transactions: patches.slice(i, i + 100) }) });
     for (let i = 0; i < creates.length; i += 100) await api(path, { method: 'POST', body: JSON.stringify({ transactions: creates.slice(i, i + 100) }) });
     LS.set('payeeMap', payeeMap);
-    toast(`Done: ${creates.length} created, ${patches.length} updated` + (skipped ? `, ${skipped} transfer halves left to YNAB` : ''), 7000);
+    if (dels.length) {
+      // Keep a copy first so "Undo last delete" can put them back.
+      LS.set('lastDeleted', { budgetId: S.budgetId, at: new Date().toISOString(), tx: dels.map(undoCopy) }); renderUndo();
+      for (const t of dels) await api(`${path}/${t.id}`, { method: 'DELETE' });
+    }
+    toast(`Done: ${creates.length} created, ${patches.length} updated` + (dels.length ? `, ${dels.length} deleted` : '') + (skipped ? `, ${skipped} transfer halves left to YNAB` : ''), 7000);
     await run();
   } catch (e) { toast('YNAB: ' + e.message, 8000); $('#btnApply').disabled = false; }
 }
@@ -1016,6 +1066,7 @@ $('#lock').onchange = e => {
 };
 $('#btnRun').onclick = run;
 $('#btnApply').onclick = apply;
+$('#btnUndo').onclick = undoDelete;
 const drop = $('#drop');
 drop.onclick = e => { if (!e.target.closest('[data-paste]')) $('#fileInput').click(); };
 let pasteSeq = 0;
@@ -1134,7 +1185,11 @@ $('#fileTable').addEventListener('click', e => {
 $('#sections').addEventListener('change', e => {
   const t = e.target, R = S.result;
   if (t.dataset.all) { R[t.dataset.all].forEach(x => { if (!x.split) x.on = t.checked; }); render(); return; }
-  if (t.dataset.i != null && R[t.dataset.k]) { R[t.dataset.k][+t.dataset.i].on = t.checked; updateApplyInfo(); return; }
+  if (t.dataset.i != null && R[t.dataset.k]) {
+    R[t.dataset.k][+t.dataset.i].on = t.checked;
+    t.closest('tr').classList.toggle(t.dataset.k === 'ynabOnly' ? 'del' : 'off', t.dataset.k === 'ynabOnly' ? t.checked : !t.checked);
+    updateApplyInfo(); return;
+  }
   const tr = t.closest('tr[data-k="missing"]');
   if (!tr) return;
   const x = R.missing[+tr.dataset.i];
@@ -1185,6 +1240,7 @@ function demoApi(path, opts) {
   if (/\/accounts$/.test(path)) return ok({ accounts: db.accounts });
   if (/\/categories$/.test(path)) return ok({ category_groups: db.category_groups });
   if (/\/payees$/.test(path)) return ok({ payees: db.payees });
+  if (opts.method === 'DELETE') { const t = db.transactions.find(t => path.endsWith('/' + t.id)); if (!t) return Promise.reject(new Error('404 not found')); t.deleted = true; return ok({ transaction: t }); }
   if (opts.method === 'PATCH') { b.transactions.forEach(u => Object.assign(db.transactions.find(t => t.id === u.id), u)); return ok({}); }
   if (opts.method === 'POST') {
     const dup = [];
