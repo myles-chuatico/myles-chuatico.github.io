@@ -100,6 +100,12 @@ main>section{background:var(--bg);box-shadow:0 0 0 16px var(--bg)}
 
 .applybar{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--ink);padding:12px 24px;display:flex;justify-content:flex-end;gap:20px;align-items:center}
 .applybar #applyInfo{font-weight:500}
+/* payee picker: every payee on focus, typing filters by any part of the name */
+.menu{position:fixed;z-index:20;margin:0;padding:4px 0;list-style:none;background:var(--bg);border:1px solid var(--ink);border-radius:12px;max-height:280px;overflow-y:auto;box-shadow:0 6px 18px rgba(0,0,0,.12);min-width:220px}
+.menu li{padding:6px 14px;cursor:pointer;white-space:nowrap}
+.menu li.on{background:var(--hover)}
+.menu li.tr{color:var(--green)}
+.menu .new{color:var(--muted);font-style:italic}
 #toast{position:fixed;bottom:72px;right:24px;max-width:440px;background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:24px;display:none;white-space:pre-wrap;z-index:10}
 .err{color:#b3261e}
 @media (max-width:640px){.mast{padding:12px 16px 0}.title{padding-top:20px}main{padding:20px 16px 120px}.applybar{padding:10px 16px}}
@@ -167,7 +173,7 @@ main>section{background:var(--bg);box-shadow:0 0 0 16px var(--bg)}
   <button id="btnApply" class="go">Apply to YNAB</button>
 </div>
 <div id="toast"></div>
-<datalist id="payeeList"></datalist>
+<ul id="payeeMenu" class="menu" role="listbox" hidden></ul>
 
 <script>
 'use strict';
@@ -512,7 +518,6 @@ async function loadBudget(id) {
   S.catById = {}; S.catGroups.forEach(g => g.cats.forEach(c => S.catById[c.id] = c));
   S.payees = pay.payees.filter(p => !p.deleted && !/^(Starting Balance|Manual Balance Adjustment|Reconciliation Balance Adjustment)$/.test(p.name))
     .map(p => ({ ...p, n: norm(p.name) }));
-  $('#payeeList').innerHTML = S.payees.map(p => `<option value="${esc(p.name)}">`).join('');
   $('#budgetInfo').textContent = '';
   S.files.forEach(f => { if (!S.accounts.some(a => a.id === f.accountId)) Object.assign(f, guessAccount(f)); });
   renderFiles();
@@ -743,7 +748,7 @@ function render() {
   if (key === 'missing') {
     head = th('<th>Date</th><th>Statement</th><th class="num">Amount</th><th>Payee</th><th>Category</th>');
     rows = items.map((x, i) => { const tr = isTransferPayee(x.payee); return `<tr data-k="missing" data-i="${i}" class="${x.on ? '' : 'off'}">${cb(i, x)}${acc(x)}${bank(x.b)}<td class="num">${money(x.b.amount)}</td>
-      <td><input type="text" list="payeeList" data-k="payee" value="${esc(x.payee)}"></td><td>${catSelect(x.categoryId, tr)}${tr ? '<span class="flag">transfer</span>' : ''}</td></tr>`; });
+      <td><input type="text" data-k="payee" autocomplete="off" role="combobox" aria-autocomplete="list" value="${esc(x.payee)}"></td><td>${catSelect(x.categoryId, tr)}${tr ? '<span class="flag">transfer</span>' : ''}</td></tr>`; });
   } else if (key === 'near') {
     head = th('<th>Date</th><th>Statement</th><th class="num">Bank</th><th>YNAB date</th><th>YNAB payee</th><th class="num">YNAB</th><th class="num">Diff</th>');
     rows = items.map((x, i) => `<tr class="${x.on ? '' : 'off'}">${cb(i, x, x.split)}${acc(x)}${bank(x.b)}<td class="num">${money(x.b.amount)}</td>${ynab(x.y)}<td class="num">${money(x.y.amount)}${x.split ? '<span class="flag">split, fix in YNAB</span>' : ''}</td><td class="num">${money(x.b.amount - x.y.amount)}</td></tr>`);
@@ -863,6 +868,61 @@ $('#sections').addEventListener('click', e => {
   ['toClear', 'cleared', 'near', 'missing', 'ynabOnly'].forEach(k => S.result[k].reverse());
   render();
 });
+// Payee picker. A <datalist> only lists names matching what's already in the box, which is prefilled, so it looked dead.
+const menu = $('#payeeMenu'), pm = { input: null, names: [], i: -1 };
+function openMenu(input, q) {
+  pm.input = input;
+  const l = q.trim().toLowerCase();
+  const hits = S.payees.filter(p => !l || p.name.toLowerCase().includes(l))
+    .sort((a, b) => (!!a.transfer_account_id - !!b.transfer_account_id) || (l && (b.name.toLowerCase().startsWith(l) - a.name.toLowerCase().startsWith(l))) || a.name.localeCompare(b.name))
+    .slice(0, 300);
+  const exact = hits.some(p => p.name.toLowerCase() === l);
+  pm.names = (l && !exact ? [q.trim()] : []).concat(hits.map(p => p.name));
+  pm.i = -1;
+  menu.innerHTML = pm.names.map((n, k) => {
+    const isNew = k === 0 && l && !exact, p = !isNew && hits[k - (l && !exact ? 1 : 0)];
+    return `<li role="option" data-k="${k}" class="${isNew ? 'new' : p?.transfer_account_id ? 'tr' : ''}">${isNew ? `New payee “${esc(n)}”` : esc(n)}</li>`;
+  }).join('') || '<li class="new">No payees</li>';
+  menu.hidden = false;
+  placeMenu();
+}
+// Pinned under the box (or above it near the bottom of the window); follows it when the page scrolls.
+function placeMenu() {
+  const input = pm.input;
+  if (!input?.isConnected) return closeMenu();
+  const r = input.getBoundingClientRect(), below = innerHeight - r.bottom - 80;
+  if (r.bottom < 0 || r.top > innerHeight) return closeMenu();
+  menu.style.left = r.left + 'px'; menu.style.minWidth = r.width + 'px';
+  if (below < 200 && r.top > below) { menu.style.top = ''; menu.style.bottom = (innerHeight - r.top + 4) + 'px'; }
+  else { menu.style.bottom = ''; menu.style.top = (r.bottom + 4) + 'px'; }
+}
+const closeMenu = () => { menu.hidden = true; pm.i = -1; };
+function choose(k) {
+  const input = pm.input; if (!input || pm.names[k] == null) return;
+  input.value = pm.names[k]; closeMenu();
+  // Blurring fires the browser's own change when the user typed; that re-renders the table and detaches this input.
+  input.blur();
+  if (input.isConnected) input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+const isPayee = t => t?.matches?.('input[data-k="payee"]');
+$('#sections').addEventListener('focusin', e => { if (isPayee(e.target)) { e.target.select(); openMenu(e.target, ''); } });
+$('#sections').addEventListener('input', e => { if (isPayee(e.target)) openMenu(e.target, e.target.value); });
+$('#sections').addEventListener('focusout', e => { if (isPayee(e.target)) setTimeout(() => { if (document.activeElement !== pm.input) closeMenu(); }, 0); });
+$('#sections').addEventListener('keydown', e => {
+  if (!isPayee(e.target)) return;
+  if (menu.hidden && e.key === 'ArrowDown') return openMenu(e.target, e.target.value);
+  const n = pm.names.length;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault(); if (!n) return;
+    pm.i = (pm.i + (e.key === 'ArrowDown' ? 1 : -1) + n) % n;
+    menu.querySelectorAll('li').forEach((li, k) => li.classList.toggle('on', k === pm.i));
+    menu.children[pm.i]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') { e.preventDefault(); if (pm.i >= 0) choose(pm.i); else { closeMenu(); e.target.blur(); } }
+  else if (e.key === 'Escape') closeMenu();
+});
+menu.addEventListener('mousedown', e => { e.preventDefault(); const li = e.target.closest('li[data-k]'); if (li) choose(+li.dataset.k); });
+addEventListener('scroll', e => { if (!menu.hidden && !menu.contains(e.target)) placeMenu(); }, true);
+addEventListener('resize', () => { if (!menu.hidden) placeMenu(); });
 $('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { S.tab = b.dataset.tab; render(); } });
 const onRange = () => {
   $('#btnAllDates').hidden = !$('#from').value && !$('#to').value;
