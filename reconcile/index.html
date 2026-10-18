@@ -93,6 +93,7 @@ main>section{background:var(--bg);box-shadow:0 0 0 16px var(--bg)}
 #fileTable tr.check>td{background:var(--fill);padding:14px 16px 18px}
 #fileTable tr.check p{margin:0 0 10px}
 .warn{color:var(--warn)}
+.ok{color:var(--green)}
 .skip{margin:0 0 14px;padding-left:20px}
 .skip li span{font-variant-numeric:tabular-nums}
 .checklist{max-height:360px;overflow-y:auto;border-top:1px solid var(--rule)}
@@ -147,8 +148,8 @@ main>section{background:var(--bg);box-shadow:0 0 0 16px var(--bg)}
   </section>
 
   <section id="filesSection" hidden>
-    <div id="drop" class="empty" tabindex="0">Drop your bank or card exports anywhere on the page, or <u>choose files</u>.<span class="fine">CSV, Excel, QFX or OFX. No export? <button class="link" data-paste>Paste transactions</button> copied from the bank's website.</span></div>
-    <input id="fileInput" type="file" multiple accept=".csv,.txt,.tsv,.qfx,.ofx,.qbo,.xlsx,.xls" hidden>
+    <div id="drop" class="empty" tabindex="0">Drop your bank or card exports anywhere on the page, or <u>choose files</u>.<span class="fine">PDF statement, CSV, Excel, QFX or OFX. No export? <button class="link" data-paste>Paste transactions</button> copied from the bank's website.</span></div>
+    <input id="fileInput" type="file" multiple accept=".csv,.txt,.tsv,.qfx,.ofx,.qbo,.xlsx,.xls,.pdf" hidden>
     <div id="pastePanel" class="paste" hidden>
       <textarea id="pasteText" rows="9" placeholder="Select the transactions on your bank's page, copy, and paste here. Dates, names and amounts in any layout."></textarea>
       <div class="chk"><button id="btnPasteAdd" class="primary">Add</button> <button id="btnPasteCancel" class="link">Cancel</button></div>
@@ -474,6 +475,119 @@ async function parseXLSX(buf) {
   }
   return parseRowsTx(rows);
 }
+
+// PDF statements. pdf.js (fetched the first time a PDF is dropped) gives positioned text; pdfLines rebuilds the
+// printed lines, with 3 spaces where there's a column gap, and parseStatement reads the "date … amount" rows.
+let pdfLib;
+const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/';
+async function readPdfLines(buf) {
+  pdfLib ||= await new Promise((ok, fail) => {
+    const s = document.createElement('script');
+    s.src = PDFJS + 'pdf.min.js';
+    s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; ok(window.pdfjsLib); };
+    s.onerror = () => fail(new Error("Couldn't load the PDF reader. Check your internet connection."));
+    document.head.appendChild(s);
+  });
+  return pdfToLines(pdfLib, buf, () => prompt('This statement has a password (often your birthday or card digits). Type it:'));
+}
+async function pdfToLines(lib, buf, askPassword) {
+  let doc, password;
+  for (;;) {
+    try { doc = await lib.getDocument({ data: new Uint8Array(buf), password, isEvalSupported: false }).promise; break; }
+    catch (e) {
+      if (e?.name !== 'PasswordException') throw e;
+      password = askPassword(e.code === 2);
+      if (password == null) throw new Error('This PDF needs its password');
+    }
+  }
+  const lines = [];
+  for (let i = 1; i <= doc.numPages; i++) lines.push(...pdfLines((await (await doc.getPage(i)).getTextContent()).items));
+  return lines;
+}
+// Some statements print every word letter-spaced ("C u s t o m e r") with the real spaces as separate items.
+const unspace = s => /^(\S )+\S$/.test(s) ? s.replace(/ /g, '') : s;
+function pdfLines(items) {
+  const rows = [];
+  for (const it of items) {
+    if (!it.str) continue;
+    const x = it.transform[4], y = it.transform[5], h = Math.abs(it.transform[3]) || it.height || 10;
+    let row = rows.find(r => Math.abs(r.y - y) < h * 0.4);
+    if (!row) rows.push(row = { y, items: [] });
+    row.items.push({ x, end: x + it.width, s: it.str.trim() ? unspace(it.str) : ' ', h });
+  }
+  return rows.sort((a, b) => b.y - a.y).map(r => {
+    let out = '', end = null;
+    for (const t of r.items.sort((a, b) => a.x - b.x)) {
+      if (t.s === ' ') { if (out && !out.endsWith(' ')) out += ' '; end = t.end; continue; }
+      if (end != null) { const gap = t.x - end; out += gap > t.h * 1.2 ? '   ' : gap > t.h * 0.25 && !out.endsWith(' ') ? ' ' : ''; }
+      out += t.s; end = t.end;
+    }
+    return out.trim();
+  }).filter(Boolean);
+}
+const MON = '(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\.?';
+const LEAD_DATE = new RegExp(`^(${MON}\\s+\\d{1,2}(?:,?\\s+\\d{4})?|\\d{1,2}[\\/\\-]\\d{1,2}(?:[\\/\\-]\\d{2,4})?)(?=\\s)`, 'i');
+const TAIL_AMT = /\s(\(?-?\s?(?:PHP\s?|₱|P\s?)?\d{1,3}(?:,\d{3})*\.\d{2}\)?(?:\s?(?:CR|DR))?)$/i;
+const SUMMARY = /balance|past due|amount due|minimum|credit limit|total|unbilled|available|points|limit/i;
+const FEE = /charge|fee|interest|penalty|tax|rebate|adjustment|cash advance|reversal/i;
+function parseStatement(raw) {
+  const lines = raw.map(l => l.trim()).filter(Boolean);
+  const all = lines.join('\n');
+  const sd = all.match(new RegExp(`statement date\\s*:?\\s+(${MON}\\s+\\d{1,2},?\\s+\\d{4}|\\d{1,2}\\/\\d{1,2}\\/\\d{2,4})`, 'i'));
+  const stmt = sd ? parseDate(sd[1]) : null;
+  // Statements print "August 22": the year is the statement's, or the one before for December items on a January statement.
+  const toDate = tok => {
+    if (/\d{4}$/.test(tok)) return parseDate(tok);
+    let mo, d, m;
+    if ((m = tok.match(/^([a-z]+)\.?\s+(\d{1,2})$/i))) { mo = MONTHS.findIndex(x => x.toLowerCase() === m[1].slice(0, 3).toLowerCase()) + 1; d = +m[2]; }
+    else if ((m = tok.match(/^(\d{1,2})[\/\-](\d{1,2})$/))) { mo = +m[1]; d = +m[2]; }
+    if (!mo) return null;
+    if (!stmt) return parseDate(`${MONTHS[mo - 1]} ${d}`);
+    const y = +stmt.slice(0, 4), guess = ymd(y, mo, d);
+    return guess && guess > addDays(stmt, 7) ? ymd(y - 1, mo, d) : guess;
+  };
+  const clean = t => t.replace(/\s{2,}/g, ' ').trim();
+  const card = lines.map(l => l.match(/^[\d\-\s*xX]{12,}?(\d{4})\s*-\s*[A-Za-z]/)).find(Boolean);
+  const out = [], skipped = [], bal = {};
+  let pend = null, last = null;
+  const amountOf = (t) => { const m = (' ' + t).match(TAIL_AMT); return m && { text: m[1], before: t.slice(0, t.length - m[0].length + 1) }; };
+  for (const t of lines) {
+    const dm = t.match(LEAD_DATE);
+    const d1 = dm && toDate(dm[1]);
+    if (d1) {
+      if (pend) skipped.push({ line: pend.line, why: 'No amount found' });
+      let rest = t.slice(dm[0].length).trim();
+      const dm2 = rest.match(LEAD_DATE);
+      if (dm2 && toDate(dm2[1])) rest = rest.slice(dm2[0].length).trim();
+      const a = amountOf(rest);
+      pend = null; last = d1;
+      if (!a) { pend = { date: d1, desc: clean(rest), line: t }; continue; }
+      const amt = parseAmount(a.text);
+      if (!amt) { skipped.push({ line: t, why: 'Amount is zero' }); continue; }
+      out.push({ date: d1, amount: amt, desc: clean(a.before) || '(no description)', tag: crdr(a.text) });
+      continue;
+    }
+    const a = amountOf(t);
+    if (!a) continue;
+    // A row of several amounts is the statement's summary table, not a transaction.
+    if ((t.match(/\d\.\d{2}\b/g) || []).length >= 3) continue;
+    const text = clean(a.before), amt = parseAmount(a.text);
+    // Foreign charges: the merchant line has no amount; the next line is "Euro 16.00   1,186.84" in pesos.
+    if (pend) { if (amt) out.push({ date: pend.date, amount: amt, desc: `${pend.desc} (${text})`, tag: crdr(a.text) }); pend = null; continue; }
+    if (/^previous (statement )?balance/i.test(text)) { bal.prev ??= amt; continue; }
+    if (/^(ending|new|statement|total outstanding) balance/i.test(text)) { bal.end ??= amt; continue; }
+    if (SUMMARY.test(text) || !amt) continue;
+    // Undated fees (finance charge, late fee) are real money: dated on the statement date.
+    if (FEE.test(text) && (stmt || last)) { out.push({ date: stmt || last, amount: amt, desc: text, tag: crdr(a.text) }); continue; }
+    skipped.push({ line: t, why: 'Has an amount but no date' });
+  }
+  if (pend) skipped.push({ line: pend.line, why: 'No amount found' });
+  applyCrDr(out);
+  const r = { rows: out, skipped, kind: 'PDF', header: 'PDF' + (card ? ' ' + card[1] : '') };
+  // previous + everything read = ending balance, when the statement prints both. Works for any sign convention.
+  if (bal.prev != null && bal.end != null) r.balance = { prev: bal.prev, end: bal.end, sum: out.reduce((s, x) => s + x.amount, 0) };
+  return r;
+}
 const fileSig = f => f.header + '|' + f.name.replace(/\.[^.]+$/, '').toLowerCase()
   .replace(/(?<!\d)(19|20)\d{2}[-_]?\d{2}[-_]?\d{2}(?!\d)/g, '').replace(/\(\d+\)/g, '').replace(/\d{5,}/g, '').replace(/[\s_\-]+/g, ' ').trim();
 
@@ -499,11 +613,17 @@ function rememberFile(f) {
 async function addFiles(list) {
   for (const file of list) {
     try {
-      const p = /\.xlsx?$/i.test(file.name) && typeof file.arrayBuffer === 'function'
-        ? await parseXLSX(await file.arrayBuffer())
+      const bin = typeof file.arrayBuffer === 'function';
+      const p = /\.pdf$/i.test(file.name) && bin ? parseStatement(await readPdfLines(await file.arrayBuffer()))
+        : /\.xlsx?$/i.test(file.name) && bin ? await parseXLSX(await file.arrayBuffer())
         : parseFile(file.name, typeof file.text === 'function' ? await file.text() : file.content);
       if (!p.rows.length) { toast(`${file.name}: no transactions found`); continue; }
-      if (p.skipped?.length) toast(`${file.name}: left out ${p.skipped.length} line${p.skipped.length > 1 ? 's' : ''}. Click "Check" to see which.`);
+      const notes = [];
+      if (p.balance) notes.push(p.balance.prev + p.balance.sum === p.balance.end
+        ? `✓ ${p.rows.length} transactions, and they add up to the statement's ending balance.`
+        : `✗ These don't add up to the statement's ending balance. Click "Check" before applying.`);
+      if (p.skipped?.length) notes.push(`Left out ${p.skipped.length} line${p.skipped.length > 1 ? 's' : ''}. Click "Check" to see which.`);
+      if (notes.length) toast(`${file.name}: ${notes.join(' ')}`, 7000);
       const f = { id: ++fileSeq, name: file.name, ...p };
       f.sig = fileSig(f);
       const dates = f.rows.map(r => r.date).sort();
@@ -741,7 +861,7 @@ function renderFiles() {
   const opts = sel => `<option value="">Choose account…</option>` + S.accounts.map(a => `<option value="${a.id}" ${a.id === sel ? 'selected' : ''}>${esc(a.name)}</option>`).join('');
   $('#fileTable tbody').innerHTML = S.files.map(f => `<tr data-id="${f.id}">
     <td><div class="desc" title="${esc(f.name)}">${esc(f.name)}</div><button class="link fine" data-f="check">${f.open ? 'Hide' : 'Check'} what was read</button></td>
-    <td class="num">${f.rows.length}${f.skipped?.length ? `<div class="flag">${f.skipped.length} left out</div>` : ''}</td>
+    <td class="num">${f.rows.length}${f.balance ? (f.balance.prev + f.balance.sum === f.balance.end ? '<div class="ok fine">✓ adds up</div>' : '<div class="err fine">✗ doesn\'t add up</div>') : ''}${f.skipped?.length ? `<div class="flag">${f.skipped.length} left out</div>` : ''}</td>
     <td class="date">${fmtDate(f.min)} – ${fmtDate(f.max)}</td>
     <td><select data-f="account">${opts(f.accountId)}</select></td>
     <td><select data-f="sign" title="Whether charges are negative in this file">
@@ -756,6 +876,12 @@ function renderFiles() {
   }
 }
 // What the parser made of a file, in the bank's own order, so it can be compared line by line with the bank's page.
+function balanceLine(b, num) {
+  const ok = b.prev + b.sum === b.end, sign = b.sum < 0 ? '−' : '+';
+  return ok
+    ? `<p class="ok"><b>✓ Matches the statement.</b> Previous balance ${num(b.prev)} ${sign} everything read ${num(b.sum)} = ${num(b.end)}, the statement's ending balance. Nothing was missed or misread.</p>`
+    : `<p class="err"><b>✗ Doesn't add up.</b> Previous balance ${num(b.prev)} ${sign} everything read ${num(b.sum)} = ${num(b.prev + b.sum)}, but the statement says ${num(b.end)} (off by ${num(b.end - b.prev - b.sum)}). Something was missed or misread: don't apply this one.</p>`;
+}
 function checkRow(f) {
   const num = m => (Math.abs(m) / 1000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   // Which way is spending: the sign the reconcile settled on, or else whichever sign most rows have.
@@ -766,7 +892,8 @@ function checkRow(f) {
   return `<tr class="check"><td colspan="6">
     <p><b>Read ${f.rows.length} transactions</b> from ${fmtDate(f.min)} to ${fmtDate(f.max)}:
       ${out.length} spent, totaling ${sum(out)}${inn.length ? `, and ${inn.length} paid in or refunded, totaling ${sum(inn)}` : ''}.
-      Compare these with your bank before applying.</p>
+      ${f.balance ? '' : 'Compare these with your bank before applying.'}</p>
+    ${f.balance ? balanceLine(f.balance, num) : ''}
     ${sk.length ? `<p class="warn"><b>Left out ${sk.length}:</b></p><ul class="skip">${sk.map(x => `<li><span>${esc(x.line)}</span> <em class="muted">${esc(x.why)}</em></li>`).join('')}</ul>` : ''}
     <div class="checklist"><table class="tbl"><thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th></tr></thead><tbody>
       ${f.rows.map(r => `<tr><td class="date">${fmtDate(r.date)}</td><td><div class="desc" title="${esc(r.desc)}">${esc(r.desc)}</div></td><td class="num">${r.amount * flip < 0 ? '' : '+'}${num(r.amount)}</td></tr>`).join('')}
