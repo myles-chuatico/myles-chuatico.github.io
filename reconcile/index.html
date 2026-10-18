@@ -89,6 +89,14 @@ main>section{background:var(--bg);box-shadow:0 0 0 16px var(--bg)}
 .in{color:var(--green)}
 .desc{max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .flag{font-size:14px;color:var(--warn);margin-left:8px;white-space:nowrap}
+#fileTable td>.link.fine{display:block;margin-top:2px;color:var(--muted)}
+#fileTable tr.check>td{background:var(--fill);padding:14px 16px 18px}
+#fileTable tr.check p{margin:0 0 10px}
+.warn{color:var(--warn)}
+.skip{margin:0 0 14px;padding-left:20px}
+.skip li span{font-variant-numeric:tabular-nums}
+.checklist{max-height:360px;overflow-y:auto;border-top:1px solid var(--rule)}
+.checklist .tbl td{padding:6px 12px}
 #fileTable .x{border:0;padding:2px 8px;font-size:15px}
 
 .tabs{display:flex;flex-wrap:wrap;gap:6px 28px;border-bottom:1px solid var(--ink)}
@@ -201,13 +209,20 @@ function ymd(y, m, d) {
   if (y < 1990 || y > 2100 || m < 1 || m > 12 || d < 1 || d > 31) return null;
   return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
+// Set per file: true when any date in it is clearly day-first (15/10/2026), so 03/04 reads as 3 April too.
+let DAY_FIRST = false;
+const detectDayFirst = vals => vals.some(v => { const m = String(v ?? '').trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.]\d{2,4}\b/); return m && +m[1] > 12 && +m[2] <= 12; });
+function withDayFirst(vals, fn) { DAY_FIRST = detectDayFirst(vals); try { return fn(); } finally { DAY_FIRST = false; } }
 function parseDate(s) {
   if (!s) return null;
   s = String(s).trim();
   let m;
   if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return ymd(+m[1], +m[2], +m[3]);
   if ((m = s.match(/^(\d{4})(\d{2})(\d{2})/))) return ymd(+m[1], +m[2], +m[3]);
-  if ((m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/))) { let y = +m[3]; if (y < 100) y += 2000; return ymd(y, +m[1], +m[2]); }
+  if ((m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/))) {
+    let y = +m[3]; if (y < 100) y += 2000;
+    return DAY_FIRST || +m[1] > 12 ? ymd(y, +m[2], +m[1]) : ymd(y, +m[1], +m[2]);
+  }
   // "Oct 15" with no year: this year, or last year if that would be in the future.
   if ((m = s.match(/^([a-z]{3,9})\.?\s+(\d{1,2})$/i))) {
     const mo = MONTHS.findIndex(x => x.toLowerCase() === m[1].slice(0, 3).toLowerCase()) + 1;
@@ -222,8 +237,23 @@ function parseDate(s) {
 // Only things that look like a whole date. Date.parse alone accepts junk like "STARBUCKS 112".
 const DATE_ONLY = /^(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|[a-z]{3,9}\.?\s+\d{1,2}(,?\s+\d{4})?|\d{1,2}\s+[a-z]{3,9}\.?,?\s+\d{4})([ T]\d{1,2}:\d{2}.*)?$/i;
 const strictDate = s => DATE_ONLY.test(String(s).trim()) ? parseDate(s) : null;
-// "PHP 1,327.00", "- PHP 7,889.76", "$12.50", "(45.00)", "12.50-"
-const AMOUNT_ONLY = /^[-+\s]*\(?\s*([a-z]{3}|[$€£₱¥])?\s*[-+]?\s*[\d,]+\.\d{2}\s*\)?\s*-?\s*([a-z]{3})?$/i;
+// "PHP 1,327.00", "- PHP 7,889.76", "$12.50", "(45.00)", "12.50-", "PHP 230", "1,000.00 CR".
+// Whole numbers count only with a currency in front, so "KFC 2291" stays a description.
+const CUR = '(?:PHP|USD|EUR|GBP|JPY|SGD|AUD|CAD|HKD|CNY|KRW|INR|MXN|NZD|CHF|AED|SAR|MYR|THB|IDR|VND|TWD|[$€£₱¥])';
+const NUM = '(?:\\d{1,3}(?:,\\d{3})+|\\d+)';
+const AMOUNT_ONLY = new RegExp(`^[-+\\s]*\\(?\\s*(?:${CUR}\\s*[-+]?\\s*${NUM}(?:\\.\\d{1,2})?|(?:P\\s*)?[-+]?\\s*${NUM}\\.\\d{2})\\s*\\)?\\s*-?\\s*(?:${CUR}|CR|DR)?\\.?$`, 'i');
+// Credit/debit markers. On cards and bank accounts alike, CR = money into the account, DR = money out.
+const crdr = s => (String(s ?? '').match(/\b(CR|DR)\.?\s*$/i) || [])[1]?.toUpperCase() || '';
+// Unmarked rows are whatever the marked ones aren't: only CRs marked → the rest are spending, and vice versa.
+function applyCrDr(rows) {
+  const cr = rows.some(r => r.tag === 'CR'), dr = rows.some(r => r.tag === 'DR');
+  if (!cr && !dr) return;
+  for (const r of rows) {
+    const a = Math.abs(r.amount);
+    if (r.tag === 'CR') r.amount = a; else if (r.tag === 'DR') r.amount = -a;
+    else if (cr !== dr) r.amount = cr ? -a : a;
+  }
+}
 function parseAmount(s) {
   if (s == null) return null;
   s = String(s).trim();
@@ -327,19 +357,24 @@ function inferCols(rows) {
 // date, name, amount, date, name, amount... Pending rows have "-" for a date and get skipped.
 function parseStacked(rows) {
   const cells = rows.flat().map(x => String(x).trim()).filter(Boolean);
-  const out = []; let cur = null, pending = 0;
-  for (const c of cells) {
-    const d = strictDate(c);
-    if (d) { cur = { date: d, desc: '' }; continue; }
-    if (AMOUNT_ONLY.test(c)) {
-      const amt = parseAmount(c);
-      if (cur && amt) out.push({ date: cur.date, amount: amt, desc: cur.desc.trim() || '(no description)' });
-      else if (amt) pending++;
-      cur = null; continue;
+  return withDayFirst(cells, () => {
+    const out = [], skipped = []; let cur = null, since = [];
+    for (const c of cells) {
+      const d = strictDate(c);
+      if (d) { cur = { date: d, desc: '' }; since = []; continue; }
+      if (AMOUNT_ONLY.test(c)) {
+        const amt = parseAmount(c);
+        if (cur && amt) out.push({ date: cur.date, amount: amt, desc: cur.desc.trim() || '(no description)', tag: crdr(c) });
+        else if (amt) skipped.push({ line: [...since.slice(-2), c].join(' · '), why: 'No date yet (pending)' });
+        else skipped.push({ line: [...since.slice(-2), c].join(' · '), why: 'Amount is zero' });
+        cur = null; since = []; continue;
+      }
+      since.push(c);
+      if (cur) cur.desc += ' ' + c;
     }
-    if (cur) cur.desc += ' ' + c;
-  }
-  return { out, pending };
+    applyCrDr(out);
+    return { out, skipped };
+  });
 }
 // Also try one-entry-per-line: pasted text like "Oct 15, 2026" / "PHP 1,327.00" has commas that aren't delimiters.
 function parseCSVTx(text) {
@@ -347,7 +382,7 @@ function parseCSVTx(text) {
   try { table = parseRowsTx(parseCSV(text)); } catch (e) { err = e; }
   const lines = text.split(/\r?\n/).map(l => [l.trim()]).filter(r => r[0]);
   const s = parseStacked(lines);
-  if (s.out.length && s.out.length >= (table?.rows.length || 0)) return { rows: s.out, header: 'List ' + lines[0][0].slice(0, 60), kind: 'List', pending: s.pending };
+  if (s.out.length && s.out.length >= (table?.rows.length || 0)) return { rows: s.out, header: 'List ' + lines[0][0].slice(0, 60), kind: 'List', skipped: s.skipped };
   if (table) return table;
   throw err;
 }
@@ -360,47 +395,54 @@ function parseRowsTx(rows) {
   let cols, data, header;
   const narrow = rows.filter(r => r.filter(x => x !== '').length <= 1).length > rows.length * 0.6;
   if (hi < 0 && narrow) {
-    const { out, pending } = parseStacked(rows);
+    const { out, skipped } = parseStacked(rows);
     if (!out.length) throw new Error("Couldn't find any date, name, amount entries");
     // The first line is usually the card holder and last 4 digits, which helps pick the account.
-    return { rows: out, header: 'List ' + String(rows[0][0] || '').slice(0, 60), kind: 'List', pending };
+    return { rows: out, header: 'List ' + String(rows[0][0] || '').slice(0, 60), kind: 'List', skipped };
   }
   if (hi >= 0) { cols = pickCols(rows[hi].map(x => x.toLowerCase())); data = rows.slice(hi + 1); header = rows[hi].join(','); }
   else { cols = inferCols(rows); data = rows; header = `(no header, ${rows[0]?.length || 0} cols)`; }
   if (cols.date < 0 || (cols.amount < 0 && cols.debit < 0 && cols.credit < 0)) throw new Error("Couldn't find date/amount columns");
-  const out = [];
-  for (const r of data) {
-    const date = parseDate(r[cols.date]);
-    if (!date) continue;
-    let amt;
-    if (cols.amount >= 0) amt = parseAmount(r[cols.amount]);
-    else {
-      const d = cols.debit >= 0 ? parseAmount(r[cols.debit]) : null, c = cols.credit >= 0 ? parseAmount(r[cols.credit]) : null;
-      if (d == null && c == null) continue;
-      amt = Math.abs(c || 0) - Math.abs(d || 0);
+  const out = [], skipped = [];
+  DAY_FIRST = detectDayFirst(data.map(r => r[cols.date]));
+  try {
+    for (const r of data) {
+      const line = r.filter(Boolean).join(' · ');
+      const date = parseDate(r[cols.date]);
+      // Lines with no date and no money in them are headers, notes or blank: not worth reporting.
+      if (!date) { if (r.some(v => AMOUNT_ONLY.test(v))) skipped.push({ line, why: 'No date (pending, or a total line)' }); continue; }
+      let amt, tag = '';
+      if (cols.amount >= 0) { amt = parseAmount(r[cols.amount]); tag = crdr(r[cols.amount]); }
+      else {
+        const d = cols.debit >= 0 ? parseAmount(r[cols.debit]) : null, c = cols.credit >= 0 ? parseAmount(r[cols.credit]) : null;
+        if (d == null && c == null) { skipped.push({ line, why: 'No amount' }); continue; }
+        amt = Math.abs(c || 0) - Math.abs(d || 0);
+      }
+      if (amt == null) { skipped.push({ line, why: 'No amount' }); continue; }
+      if (!amt) { skipped.push({ line, why: 'Amount is zero' }); continue; }
+      const desc = cols.desc >= 0 ? r[cols.desc] : r.filter((v, i) => i !== cols.date && i !== cols.amount).join(' ');
+      out.push({ date, amount: amt, desc, type: cols.type >= 0 ? (r[cols.type] || '').toLowerCase() : '', tag });
     }
-    if (!amt) continue;
-    const desc = cols.desc >= 0 ? r[cols.desc] : r.filter((v, i) => i !== cols.date && i !== cols.amount).join(' ');
-    out.push({ date, amount: amt, desc, type: cols.type >= 0 ? (r[cols.type] || '').toLowerCase() : '' });
-  }
+  } finally { DAY_FIRST = false; }
+  applyCrDr(out);
   // Positive-only amounts with a Debit/Credit type column: sign comes from the type.
   if (cols.amount >= 0 && cols.type >= 0 && out.every(x => x.amount > 0) && out.some(x => /debit|withdraw/.test(x.type)))
     out.forEach(x => { if (/debit|withdraw|sale|purchase/.test(x.type)) x.amount = -x.amount; });
-  return { rows: out, header, kind: 'CSV' };
+  return { rows: out, header, kind: 'CSV', skipped };
 }
 function parseOFX(text) {
   const dec = s => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
   const g = (b, t) => { const m = b.match(new RegExp('<' + t + '>([^<\\r\\n]*)', 'i')); return m ? dec(m[1].trim()) : ''; };
-  const rows = [];
+  const rows = [], skipped = [];
   for (const b0 of text.split(/<STMTTRN>/i).slice(1)) {
     const b = b0.split(/<\/STMTTRN>/i)[0];
     const date = parseDate(g(b, 'DTPOSTED')), amount = parseAmount(g(b, 'TRNAMT'));
-    if (!date || !amount) continue;
+    if (!date || !amount) { skipped.push({ line: [g(b, 'DTPOSTED'), g(b, 'NAME'), g(b, 'TRNAMT')].join(' · '), why: !date ? 'No date' : 'Amount is zero' }); continue; }
     const name = g(b, 'NAME'), memo = g(b, 'MEMO');
     rows.push({ date, amount, desc: memo && !name.includes(memo) ? `${name} ${memo}` : name, fitid: g(b, 'FITID') });
   }
   const acct = (text.match(/<ACCTID>([^<\r\n]+)/i) || [])[1] || '';
-  return { rows, header: 'OFX ' + acct.replace(/\D/g, '').slice(-4), kind: 'OFX' };
+  return { rows, header: 'OFX ' + acct.replace(/\D/g, '').slice(-4), kind: 'OFX', skipped };
 }
 function parseFile(name, text) {
   return /OFXHEADER|<OFX>|<STMTTRN>/i.test(text) ? parseOFX(text) : parseCSVTx(text);
@@ -461,7 +503,7 @@ async function addFiles(list) {
         ? await parseXLSX(await file.arrayBuffer())
         : parseFile(file.name, typeof file.text === 'function' ? await file.text() : file.content);
       if (!p.rows.length) { toast(`${file.name}: no transactions found`); continue; }
-      if (p.pending) toast(`${file.name}: skipped ${p.pending} pending (no date yet)`);
+      if (p.skipped?.length) toast(`${file.name}: left out ${p.skipped.length} line${p.skipped.length > 1 ? 's' : ''}. Click "Check" to see which.`);
       const f = { id: ++fileSeq, name: file.name, ...p };
       f.sig = fileSig(f);
       const dates = f.rows.map(r => r.date).sort();
@@ -698,20 +740,37 @@ function renderFiles() {
   $('#fileTable').hidden = !has; $('#drop').hidden = has; $('#toolbar').hidden = !has && !DEMO;
   const opts = sel => `<option value="">Choose account…</option>` + S.accounts.map(a => `<option value="${a.id}" ${a.id === sel ? 'selected' : ''}>${esc(a.name)}</option>`).join('');
   $('#fileTable tbody').innerHTML = S.files.map(f => `<tr data-id="${f.id}">
-    <td><div class="desc" title="${esc(f.name)}">${esc(f.name)}</div></td>
-    <td class="num">${f.rows.length}</td>
+    <td><div class="desc" title="${esc(f.name)}">${esc(f.name)}</div><button class="link fine" data-f="check">${f.open ? 'Hide' : 'Check'} what was read</button></td>
+    <td class="num">${f.rows.length}${f.skipped?.length ? `<div class="flag">${f.skipped.length} left out</div>` : ''}</td>
     <td class="date">${fmtDate(f.min)} – ${fmtDate(f.max)}</td>
     <td><select data-f="account">${opts(f.accountId)}</select></td>
     <td><select data-f="sign" title="Whether charges are negative in this file">
       <option value="auto" ${f.sign === 'auto' ? 'selected' : ''}>Detect${f.sign === 'auto' && f.resolved ? (f.resolved < 0 ? ': flipped' : ': as is') : ''}</option>
       <option value="as-is" ${f.sign === 'as-is' ? 'selected' : ''}>As is</option>
       <option value="flip" ${f.sign === 'flip' ? 'selected' : ''}>Flipped</option></select></td>
-    <td class="num"><button class="x" data-f="remove" title="Remove file" aria-label="Remove file">✕</button></td></tr>`).join('');
+    <td class="num"><button class="x" data-f="remove" title="Remove file" aria-label="Remove file">✕</button></td></tr>${f.open ? checkRow(f) : ''}`).join('');
   $('#btnRun').disabled = !has || !S.accounts.length;
   if (has) {
     const lo = S.files.map(f => f.min).sort()[0], hi = S.files.map(f => f.max).sort().at(-1);
     ['#from', '#to'].forEach(s => { $(s).min = lo; $(s).max = hi; });
   }
+}
+// What the parser made of a file, in the bank's own order, so it can be compared line by line with the bank's page.
+function checkRow(f) {
+  const num = m => (Math.abs(m) / 1000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Which way is spending: the sign the reconcile settled on, or else whichever sign most rows have.
+  const flip = f.resolved ? f.resolved : (f.rows.filter(r => r.amount > 0).length > f.rows.length / 2 ? -1 : 1);
+  const out = f.rows.filter(r => r.amount * flip < 0), inn = f.rows.filter(r => r.amount * flip > 0);
+  const sum = rs => num(rs.reduce((a, r) => a + r.amount, 0));
+  const sk = f.skipped || [];
+  return `<tr class="check"><td colspan="6">
+    <p><b>Read ${f.rows.length} transactions</b> from ${fmtDate(f.min)} to ${fmtDate(f.max)}:
+      ${out.length} spent, totaling ${sum(out)}${inn.length ? `, and ${inn.length} paid in or refunded, totaling ${sum(inn)}` : ''}.
+      Compare these with your bank before applying.</p>
+    ${sk.length ? `<p class="warn"><b>Left out ${sk.length}:</b></p><ul class="skip">${sk.map(x => `<li><span>${esc(x.line)}</span> <em class="muted">${esc(x.why)}</em></li>`).join('')}</ul>` : ''}
+    <div class="checklist"><table class="tbl"><thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th></tr></thead><tbody>
+      ${f.rows.map(r => `<tr><td class="date">${fmtDate(r.date)}</td><td><div class="desc" title="${esc(r.desc)}">${esc(r.desc)}</div></td><td class="num">${r.amount * flip < 0 ? '' : '+'}${num(r.amount)}</td></tr>`).join('')}
+    </tbody></table></div></td></tr>`;
 }
 function catSelect(sel, disabled) {
   return `<select data-k="cat" ${disabled ? 'disabled' : ''}><option value="">Uncategorized</option>` +
@@ -940,6 +999,7 @@ $('#fileTable').addEventListener('change', e => {
   renderFiles();
 });
 $('#fileTable').addEventListener('click', e => {
+  if (e.target.dataset.f === 'check') { const f = S.files.find(f => f.id === +e.target.closest('tr').dataset.id); f.open = !f.open; return renderFiles(); }
   if (e.target.dataset.f !== 'remove') return;
   S.files = S.files.filter(f => f.id !== +e.target.closest('tr').dataset.id);
   renderFiles();
