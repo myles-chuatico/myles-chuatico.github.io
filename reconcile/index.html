@@ -118,6 +118,8 @@ main>section{background:var(--bg);box-shadow:0 0 0 16px var(--bg)}
 .menu li.on{background:var(--hover)}
 .menu li.tr{color:var(--green)}
 .menu .new{color:var(--muted);font-style:italic}
+.menu li small{float:right;margin-left:16px;color:var(--muted);font-size:13px}
+.tbl input[data-k="cat"]::placeholder{font-style:normal;color:var(--ink)}
 #toast{position:fixed;bottom:72px;right:24px;max-width:440px;background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:24px;display:none;white-space:pre-wrap;z-index:10}
 .err{color:#b3261e}
 @media (max-width:640px){.mast{padding:12px 16px 0}.title{padding-top:20px}main{padding:20px 16px 120px}.applybar{padding:10px 16px}}
@@ -310,6 +312,56 @@ function cleanDesc(s) {
   const t = stripWallet(s).trim().replace(/^\s*(sq|tst|sp|pp|paypal|py|dd|fsp)\s?\*\s?/i, '').replace(/\b(des|id|indn|ppd|co id)\s*:.*$/i, '').replace(/[#*]\S*/g, ' ')
     .split(/\s+/).filter(w => w && !/\d{3,}/.test(w)).join(' ').trim().replace(/\s+[A-Z]{2}$/, '');
   return titleCase(t || String(s || '')).slice(0, 50);
+}
+
+// Search ranking for the payee and category pickers.
+const simple = s => String(s || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+// Edit distance with adjacent swaps; gives up past `max`.
+function editDist(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let pp = null, p = [...Array(b.length + 1).keys()];
+  for (let i = 1; i <= a.length; i++) {
+    const c = [i]; let lo = i;
+    for (let j = 1; j <= b.length; j++) {
+      c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (pp && i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) c[j] = Math.min(c[j], pp[j - 2] + 1);
+      lo = Math.min(lo, c[j]);
+    }
+    if (lo > max) return max + 1;
+    pp = p; p = c;
+  }
+  return p[b.length];
+}
+const inOrder = (t, w) => { let at = -1; for (const ch of t) if ((at = w.indexOf(ch, at + 1)) < 0) return false; return true; };
+// exact > starts with > a word starts with > contains > initials > every word close enough (typos). 0 = no match.
+function searchScore(q, name) {
+  const qq = simple(q), n = simple(name);
+  if (!qq) return 1;
+  if (!n) return 0;
+  if (n === qq) return 1000;
+  if (n.startsWith(qq)) return 900;
+  const words = n.split(' ');
+  if (words.some(w => w.startsWith(qq))) return 800;
+  const nc = n.replace(/ /g, ''), qc = qq.replace(/ /g, '');
+  if (qc.length >= 2 && nc.includes(qc)) return 700 - nc.indexOf(qc);
+  if (qc.length >= 2 && words.map(w => w[0]).join('').startsWith(qc)) return 650;
+  let total = 0;
+  const qw = qq.split(' ');
+  for (const t of qw) {
+    let best = 0;
+    for (const w of words) {
+      if (w.startsWith(t)) { best = 100; break; }
+      // Letters in order with the same first letter, e.g. dropped vowels: "trdr" → trader.
+      if (t.length >= 3 && w[0] === t[0] && t.length >= w.length / 2 && inOrder(t, w)) best = Math.max(best, 60);
+      const allow = t.length >= 7 ? 2 : t.length >= 4 ? 1 : 0;
+      if (!allow) continue;
+      const d = Math.min(editDist(t, w.slice(0, t.length), allow), editDist(t, w, allow));
+      if (d <= allow) best = Math.max(best, 100 - d * 30);
+    }
+    if (!best) return 0;
+    total += best;
+  }
+  return 300 + total / qw.length;
 }
 
 // ---------------- file parsing ----------------
@@ -916,9 +968,9 @@ function checkRow(f) {
       ${f.rows.map(r => `<tr><td class="date">${fmtDate(r.date)}</td><td><div class="desc" title="${esc(r.desc)}">${esc(r.desc)}</div></td><td class="num">${r.amount * flip < 0 ? '' : '+'}${num(r.amount)}</td></tr>`).join('')}
     </tbody></table></div></td></tr>`;
 }
-function catSelect(sel, disabled) {
-  return `<select data-k="cat" ${disabled ? 'disabled' : ''}><option value="">Uncategorized</option>` +
-    S.catGroups.map(g => `<optgroup label="${esc(g.name)}">` + g.cats.map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.name)}</option>`).join('') + '</optgroup>').join('') + '</select>';
+function catInput(id, disabled) {
+  const c = id && S.catById[id];
+  return `<input type="text" data-k="cat" data-id="${c ? id : ''}" value="${c ? esc(c.name) : ''}" placeholder="Uncategorized" autocomplete="off" role="combobox" aria-autocomplete="list" ${disabled ? 'disabled' : ''}>`;
 }
 const isTransferPayee = name => S.payees.some(p => p.name === name && p.transfer_account_id);
 const TABS = [
@@ -952,7 +1004,7 @@ function render() {
   if (key === 'missing') {
     head = th('<th>Date</th><th>Statement</th><th class="num">Amount</th><th>Payee</th><th>Category</th>');
     rows = items.map((x, i) => { const tr = isTransferPayee(x.payee); return `<tr data-k="missing" data-i="${i}" class="${x.on ? '' : 'off'}">${cb(i, x)}${acc(x)}${bank(x.b)}<td class="num">${money(x.b.amount)}</td>
-      <td><input type="text" data-k="payee" autocomplete="off" role="combobox" aria-autocomplete="list" value="${esc(x.payee)}"></td><td>${catSelect(x.categoryId, tr)}${tr ? '<span class="flag">transfer</span>' : ''}</td></tr>`; });
+      <td><input type="text" data-k="payee" autocomplete="off" role="combobox" aria-autocomplete="list" value="${esc(x.payee)}"></td><td>${catInput(x.categoryId, tr)}${tr ? '<span class="flag">transfer</span>' : ''}</td></tr>`; });
   } else if (key === 'near') {
     head = th('<th>Date</th><th>Statement</th><th class="num">Bank</th><th>YNAB date</th><th>YNAB payee</th><th class="num">YNAB</th><th class="num">Diff</th>');
     rows = items.map((x, i) => `<tr class="${x.on ? '' : 'off'}">${cb(i, x, x.split)}${acc(x)}${bank(x.b)}<td class="num">${money(x.b.amount)}</td>${ynab(x.y)}<td class="num">${money(x.y.amount)}${x.split ? '<span class="flag">split, fix in YNAB</span>' : ''}</td><td class="num">${money(x.b.amount - x.y.amount)}</td></tr>`);
@@ -1105,21 +1157,38 @@ $('#sections').addEventListener('click', e => {
   ['toClear', 'cleared', 'near', 'missing', 'ynabOnly'].forEach(k => S.result[k].reverse());
   render();
 });
-// Payee picker. A <datalist> only lists names matching what's already in the box, which is prefilled, so it looked dead.
-const menu = $('#payeeMenu'), pm = { input: null, names: [], i: -1 };
+// ---- Search pickers for payee and category: ranked like a search engine, typos forgiven, most-used first on ties.
+// How often each payee and category is used, for ranking. Recounted when the YNAB data changes.
+let useFor = null, useCount = { payee: {}, cat: {} };
+function usage() {
+  if (useFor === S.tx) return useCount;
+  useFor = S.tx; useCount = { payee: {}, cat: {} };
+  for (const t of S.tx) {
+    if (t.deleted) continue;
+    if (t.payee_name) useCount.payee[t.payee_name] = (useCount.payee[t.payee_name] || 0) + 1;
+    for (const c of t.subtransactions?.length ? t.subtransactions : [t]) if (c.category_id) useCount.cat[c.category_id] = (useCount.cat[c.category_id] || 0) + 1;
+  }
+  return useCount;
+}
+function pickerOptions(kind) {
+  const u = usage();
+  if (kind === 'payee') return S.payees.map(p => ({ label: p.name, value: p.name, sub: p.transfer_account_id ? 'transfer' : '', tr: !!p.transfer_account_id, use: u.payee[p.name] || 0 }));
+  return [{ label: 'Uncategorized', value: '', sub: '', use: -1 }].concat(S.catGroups.flatMap(g => g.cats.map(c => ({ label: c.name, value: c.id, sub: g.name, use: u.cat[c.id] || 0 }))));
+}
+const menu = $('#payeeMenu'), pm = { input: null, opts: [], i: -1 };
 function openMenu(input, q) {
   pm.input = input;
-  const l = q.trim().toLowerCase();
-  const hits = S.payees.filter(p => !l || p.name.toLowerCase().includes(l))
-    .sort((a, b) => (!!a.transfer_account_id - !!b.transfer_account_id) || (l && (b.name.toLowerCase().startsWith(l) - a.name.toLowerCase().startsWith(l))) || a.name.localeCompare(b.name))
-    .slice(0, 300);
-  const exact = hits.some(p => p.name.toLowerCase() === l);
-  pm.names = (l && !exact ? [q.trim()] : []).concat(hits.map(p => p.name));
-  pm.i = -1;
-  menu.innerHTML = pm.names.map((n, k) => {
-    const isNew = k === 0 && l && !exact, p = !isNew && hits[k - (l && !exact ? 1 : 0)];
-    return `<li role="option" data-k="${k}" class="${isNew ? 'new' : p?.transfer_account_id ? 'tr' : ''}">${isNew ? `New payee “${esc(n)}”` : esc(n)}</li>`;
-  }).join('') || '<li class="new">No payees</li>';
+  const kind = input.dataset.k, qq = q.trim();
+  let list = pickerOptions(kind);
+  if (!qq) list.sort((a, b) => (a.tr - b.tr) || (b.use - a.use) || a.label.localeCompare(b.label));
+  else list = list.map(o => ({ ...o, s: Math.max(searchScore(qq, o.label), o.sub && !o.tr ? searchScore(qq, o.sub) - 300 : 0) }))
+    .filter(o => o.s > 0).sort((a, b) => (b.s - a.s) || (b.use - a.use) || a.label.localeCompare(b.label));
+  list = list.slice(0, 200);
+  if (kind === 'payee' && qq && !list.some(o => simple(o.label) === simple(qq))) list.push({ label: qq, value: qq, isNew: true });
+  pm.opts = list;
+  pm.i = qq && list.length ? 0 : -1;
+  menu.innerHTML = list.map((o, k) => `<li role="option" data-k="${k}" class="${o.isNew ? 'new' : o.tr ? 'tr' : ''}${k === pm.i ? ' on' : ''}">${o.isNew ? `New payee “${esc(o.label)}”` : esc(o.label)}${o.sub ? `<small>${esc(o.sub)}</small>` : ''}</li>`).join('')
+    || `<li class="new">No ${kind === 'cat' ? 'category' : 'payee'} matches</li>`;
   menu.hidden = false;
   placeMenu();
 }
@@ -1135,27 +1204,30 @@ function placeMenu() {
 }
 const closeMenu = () => { menu.hidden = true; pm.i = -1; };
 function choose(k) {
-  const input = pm.input; if (!input || pm.names[k] == null) return;
-  input.value = pm.names[k]; closeMenu();
+  const input = pm.input, o = pm.opts[k]; if (!input || !o) return;
+  input.value = o.value === '' && input.dataset.k === 'cat' ? '' : o.label;
+  if (input.dataset.k === 'cat') input.dataset.id = o.value;
+  closeMenu();
   // Blurring fires the browser's own change when the user typed; that re-renders the table and detaches this input.
   input.blur();
   if (input.isConnected) input.dispatchEvent(new Event('change', { bubbles: true }));
 }
-const isPayee = t => t?.matches?.('input[data-k="payee"]');
-$('#sections').addEventListener('focusin', e => { if (isPayee(e.target)) { e.target.select(); openMenu(e.target, ''); } });
-$('#sections').addEventListener('input', e => { if (isPayee(e.target)) openMenu(e.target, e.target.value); });
-$('#sections').addEventListener('focusout', e => { if (isPayee(e.target)) setTimeout(() => { if (document.activeElement !== pm.input) closeMenu(); }, 0); });
+const isPicker = t => t?.matches?.('input[data-k="payee"], input[data-k="cat"]');
+$('#sections').addEventListener('focusin', e => { if (isPicker(e.target)) { e.target.select(); openMenu(e.target, ''); } });
+$('#sections').addEventListener('input', e => { if (isPicker(e.target)) openMenu(e.target, e.target.value); });
+$('#sections').addEventListener('focusout', e => { if (isPicker(e.target)) setTimeout(() => { if (document.activeElement !== pm.input) closeMenu(); }, 0); });
 $('#sections').addEventListener('keydown', e => {
-  if (!isPayee(e.target)) return;
+  if (!isPicker(e.target)) return;
   if (menu.hidden && e.key === 'ArrowDown') return openMenu(e.target, e.target.value);
-  const n = pm.names.length;
+  const n = pm.opts.length;
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
     e.preventDefault(); if (!n) return;
     pm.i = (pm.i + (e.key === 'ArrowDown' ? 1 : -1) + n) % n;
     menu.querySelectorAll('li').forEach((li, k) => li.classList.toggle('on', k === pm.i));
     menu.children[pm.i]?.scrollIntoView({ block: 'nearest' });
-  } else if (e.key === 'Enter') { e.preventDefault(); if (pm.i >= 0) choose(pm.i); else { closeMenu(); e.target.blur(); } }
-  else if (e.key === 'Escape') closeMenu();
+  } else if (e.key === 'Enter' || (e.key === 'Tab' && !menu.hidden && pm.i >= 0)) {
+    e.preventDefault(); if (pm.i >= 0) choose(pm.i); else { closeMenu(); e.target.blur(); }
+  } else if (e.key === 'Escape') closeMenu();
 });
 menu.addEventListener('mousedown', e => { e.preventDefault(); const li = e.target.closest('li[data-k]'); if (li) choose(+li.dataset.k); });
 addEventListener('scroll', e => { if (!menu.hidden && !menu.contains(e.target)) placeMenu(); }, true);
@@ -1193,7 +1265,7 @@ $('#sections').addEventListener('change', e => {
   const tr = t.closest('tr[data-k="missing"]');
   if (!tr) return;
   const x = R.missing[+tr.dataset.i];
-  if (t.dataset.k === 'cat') x.categoryId = t.value;
+  if (t.dataset.k === 'cat') { x.categoryId = t.dataset.id || ''; return render(); }
   if (t.dataset.k === 'payee') {
     x.payee = t.value;
     const cat = lastCategoryByPayee()[x.payee];
