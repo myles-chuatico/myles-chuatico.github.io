@@ -746,18 +746,23 @@ async function loadBudget(id) {
 // Dates may differ by up to `win` days either way (late posting, or logging a purchase a day late).
 // But a YNAB entry dated after the statement's last day hasn't posted yet, so it may only match a
 // bank row on or after its own date; otherwise a pending purchase steals an older identical one.
-const okGap = (b, y, win, max) => { const d = dayDiff(b.date, y.date); return Math.abs(d) <= win && (d >= 0 || y.date <= max); };
+// Mirror rule for the start: a YNAB entry dated before the statement's first day that's already cleared was cleared
+// against an earlier statement, so it can't pair with a row here (a daily coffee would otherwise grab yesterday's).
+const okGap = (b, y, win, max, min) => {
+  const d = dayDiff(b.date, y.date);
+  return Math.abs(d) <= win && (d >= 0 || y.date <= max) && (y.date >= min || y.cleared === 'uncleared');
+};
 // YNAB dated after the bank date is plausible but less likely, so it scores a bit worse.
 const gapScore = (b, y) => { const d = dayDiff(b.date, y.date); return d >= 0 ? d : 0.5 - d; };
 function matchRows(bank, ynab, win) {
-  const max = bank.reduce((m, b) => b.date > m ? b.date : m, '');
+  const max = bank.reduce((m, b) => b.date > m ? b.date : m, ''), min = bank.reduce((m, b) => b.date < m ? b.date : m, max);
   const byAmt = new Map();
   ynab.forEach((y, j) => { if (!byAmt.has(y.amount)) byAmt.set(y.amount, []); byAmt.get(y.amount).push(j); });
   const pairs = [];
   bank.forEach((b, i) => {
     for (const j of byAmt.get(b.amount) || []) {
       const dd = gapScore(b, ynab[j]);
-      if (okGap(b, ynab[j], win, max)) pairs.push({ i, j, dd, s: Math.max(sim(b.n, ynab[j].n), sim(b.n, ynab[j].n2)) });
+      if (okGap(b, ynab[j], win, max, min)) pairs.push({ i, j, dd, s: Math.max(sim(b.n, ynab[j].n), sim(b.n, ynab[j].n2)) });
     }
   });
   // Payee similarity is worth up to 3 days of date difference.
@@ -771,7 +776,7 @@ function matchRows(bank, ynab, win) {
     if (g.length < 2) continue;
     const is = g.map(p => p[0]).sort((a, b) => bank[a].date < bank[b].date ? -1 : 1);
     const js = g.map(p => p[1]).sort((a, b) => ynab[a].date < ynab[b].date ? -1 : 1);
-    if (is.every((i, k) => okGap(bank[i], ynab[js[k]], win, max))) is.forEach((i, k) => bi.set(i, js[k]));
+    if (is.every((i, k) => okGap(bank[i], ynab[js[k]], win, max, min))) is.forEach((i, k) => bi.set(i, js[k]));
   }
   return bi;
 }
@@ -877,7 +882,7 @@ async function run() {
         if (Math.sign(b.amount) !== Math.sign(t.amount)) continue;
         const dd = Math.abs(dayDiff(b.date, t.date)), s = Math.max(sim(b.n, t.n), sim(b.n, t.n2));
         const diff = Math.abs(b.amount - t.amount);
-        if (okGap(b, t, win, max) && s >= 0.5 && diff <= Math.max(Math.abs(b.amount) * 0.5, 20000)) cand.push({ i, j, dd, s });
+        if (okGap(b, t, win, max, min) && s >= 0.5 && diff <= Math.max(Math.abs(b.amount) * 0.5, 20000)) cand.push({ i, j, dd, s });
       }
       cand.sort((p, q) => (q.s - p.s) || (p.dd - q.dd));
       const nb = new Set(), ny = new Set();
@@ -893,7 +898,9 @@ async function run() {
       for (const i of ub) {
         if (nb.has(i)) continue;
         const b = bank[i], payee = suggestPayee(b.desc);
-        R.missing.push({ acct, b, payee, categoryId: catByPayee[payee] || '', on: true });
+        // The guard above can be wrong when an entry was cleared outside this page with an earlier date: say so.
+        const twin = y.find(t => t.date < min && t.cleared !== 'uncleared' && t.amount === b.amount && Math.abs(dayDiff(b.date, t.date)) <= win && Math.max(sim(b.n, t.n), sim(b.n, t.n2)) >= 0.5);
+        R.missing.push({ acct, b, payee, categoryId: catByPayee[payee] || '', on: true, hint: twin && `Maybe already in YNAB: ${twin.payee_name || 'no payee'}, ${fmtDate(twin.date)}, ${twin.cleared}` });
       }
       // YNAB-only rows can be deleted, never by default. Hints say why a row might (or might not) be wrong.
       const matchedY = [...usedY].map(j => y[j]);
@@ -1003,7 +1010,7 @@ function render() {
   let head = '', rows = [];
   if (key === 'missing') {
     head = th('<th>Date</th><th>Statement</th><th class="num">Amount</th><th>Payee</th><th>Category</th>');
-    rows = items.map((x, i) => { const tr = isTransferPayee(x.payee); return `<tr data-k="missing" data-i="${i}" class="${x.on ? '' : 'off'}">${cb(i, x)}${acc(x)}${bank(x.b)}<td class="num">${money(x.b.amount)}</td>
+    rows = items.map((x, i) => { const tr = isTransferPayee(x.payee); return `<tr data-k="missing" data-i="${i}" class="${x.on ? '' : 'off'}">${cb(i, x)}${acc(x)}${bank(x.b)}<td class="num">${money(x.b.amount)}${x.hint ? `<div class="flag">${esc(x.hint)}</div>` : ''}</td>
       <td><input type="text" data-k="payee" autocomplete="off" role="combobox" aria-autocomplete="list" value="${esc(x.payee)}"></td><td>${catInput(x.categoryId, tr)}${tr ? '<span class="flag">transfer</span>' : ''}</td></tr>`; });
   } else if (key === 'near') {
     head = th('<th>Date</th><th>Statement</th><th class="num">Bank</th><th>YNAB date</th><th>YNAB payee</th><th class="num">YNAB</th><th class="num">Diff</th>');
@@ -1065,8 +1072,9 @@ async function apply() {
   const dels = [];
   for (const x of R.ynabOnly.filter(x => x.on && !x.locked)) if (!dels.some(d => d.transfer_transaction_id === x.y.id)) dels.push(x.y);
   const patches = [
-    ...R.toClear.filter(x => x.on).map(x => ({ id: x.y.id, cleared: 'cleared', approved: true })),
-    ...R.near.filter(x => x.on && !x.split).map(x => ({ id: x.y.id, amount: x.b.amount, cleared: 'cleared', approved: true })),
+    // The bank's date wins too, so YNAB and the statement agree on later runs.
+    ...R.toClear.filter(x => x.on).map(x => ({ id: x.y.id, date: x.b.date, cleared: 'cleared', approved: true })),
+    ...R.near.filter(x => x.on && !x.split).map(x => ({ id: x.y.id, date: x.b.date, amount: x.b.amount, cleared: 'cleared', approved: true })),
   ];
   const payeeMap = LS.get('payeeMap', {}), transfers = [], creates = [];
   let skipped = 0;
