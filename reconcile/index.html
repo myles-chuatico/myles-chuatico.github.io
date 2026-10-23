@@ -93,6 +93,9 @@ main>section{background:var(--bg);box-shadow:0 0 0 16px var(--bg)}
 #fileTable tr.check>td{background:var(--fill);padding:14px 16px 18px}
 #fileTable tr.check p{margin:0 0 10px}
 .warn{color:var(--warn)}
+/* YNAB-style cleared toggle */
+.clr{width:22px;height:22px;padding:0;border-radius:50%;border:1px solid var(--muted);background:transparent;color:var(--muted);font:600 12px/20px var(--serif);text-align:center}
+.clr.on{background:var(--green);border-color:var(--green);color:var(--bg)}
 .rowhint{font-size:13px;color:var(--warn);max-width:340px;margin-top:2px}
 .tbl tr.del td:not(:first-child){color:#b3261e;text-decoration:line-through;text-decoration-thickness:1px}
 .hints span{display:inline-block;font-size:13.5px;color:var(--warn);margin-right:10px;white-space:nowrap}
@@ -985,7 +988,7 @@ function catInput(id, disabled) {
 }
 const isTransferPayee = name => S.payees.some(p => p.name === name && p.transfer_account_id);
 const TABS = [
-  ['missing', 'Missing from YNAB', 'On the statement but not in YNAB. Ticked rows are created as cleared.'],
+  ['missing', 'Missing from YNAB', 'On the statement but not in YNAB. Ticked rows are created; the C shows whether each one goes in cleared (green) or uncleared (grey).'],
   ['near', 'Amount differs', 'Same purchase, different amount (often a tip). Ticked rows get the bank amount.'],
   ['toClear', 'To clear', 'In both places but not cleared yet. Ticked rows get marked cleared.'],
   ['ynabOnly', 'Only in YNAB', 'In YNAB but not on the statement: still pending, a duplicate, or entered wrong. Tick only the ones you want deleted from YNAB.'],
@@ -1013,8 +1016,9 @@ function render() {
 
   let head = '', rows = [];
   if (key === 'missing') {
-    head = th('<th>Date</th><th>Statement</th><th class="num">Amount</th><th>Payee</th><th>Category</th>');
-    rows = items.map((x, i) => { const tr = isTransferPayee(x.payee); return `<tr data-k="missing" data-i="${i}" class="${x.on ? '' : 'off'}">${cb(i, x)}${acc(x)}${bank(x.b, x.hint)}<td class="num">${money(x.b.amount)}</td>
+    const allClr = items.every(x => x.cleared !== false);
+    head = th(`<th>Date</th><th>Statement</th><th class="num">Amount</th><th><button class="clr ${allClr ? 'on' : ''}" data-clr="all" title="Set all to ${allClr ? 'uncleared' : 'cleared'}" aria-label="Cleared, set all">C</button></th><th>Payee</th><th>Category</th>`);
+    rows = items.map((x, i) => { const tr = isTransferPayee(x.payee); return `<tr data-k="missing" data-i="${i}" class="${x.on ? '' : 'off'}">${cb(i, x)}${acc(x)}${bank(x.b, x.hint)}<td class="num">${money(x.b.amount)}</td><td><button class="clr ${x.cleared !== false ? 'on' : ''}" data-clr="${i}" title="${x.cleared !== false ? 'Cleared' : 'Uncleared'}: click to switch" aria-pressed="${x.cleared !== false}">C</button></td>
       <td><input type="text" data-k="payee" autocomplete="off" role="combobox" aria-autocomplete="list" value="${esc(x.payee)}"></td><td>${catInput(x.categoryId, tr)}${tr ? '<span class="flag">transfer</span>' : ''}</td></tr>`; });
   } else if (key === 'near') {
     head = th('<th>Date</th><th>Statement</th><th class="num">Bank</th><th>YNAB date</th><th>YNAB payee</th><th class="num">YNAB</th><th class="num">Diff</th>');
@@ -1091,7 +1095,7 @@ async function apply() {
       transfers.push({ acct: x.acct, other: p.transfer_account_id, amount: x.b.amount, date: x.b.date });
     }
     // No import_id: YNAB would treat it as a bank import and auto-match it to other entries on its own.
-    const t = { account_id: x.acct, date: x.b.date, amount: x.b.amount, cleared: 'cleared', approved: true };
+    const t = { account_id: x.acct, date: x.b.date, amount: x.b.amount, cleared: x.cleared === false ? 'uncleared' : 'cleared', approved: true };
     if (p) t.payee_id = p.id; else if (x.payee.trim()) t.payee_name = x.payee.trim().slice(0, 200);
     t.category_id = p?.transfer_account_id ? null : (x.categoryId || null);
     creates.push(t);
@@ -1164,6 +1168,13 @@ $('#btnToken').onclick = () => { $('#connectPanel').hidden = !$('#connectPanel')
 // Date header toggles oldest/newest first. Arrays are reversed in place so row indices stay valid.
 S.desc = LS.get('sortDesc', false);
 $('#sections').addEventListener('click', e => {
+  const c = e.target.closest('[data-clr]');
+  if (c) {
+    const m = S.result.missing;
+    if (c.dataset.clr === 'all') { const to = !m.every(x => x.cleared !== false); m.forEach(x => x.cleared = to); }
+    else m[+c.dataset.clr].cleared = m[+c.dataset.clr].cleared === false;
+    return render();
+  }
   if (!e.target.closest('[data-sort]')) return;
   S.desc = !S.desc; LS.set('sortDesc', S.desc);
   ['toClear', 'cleared', 'near', 'missing', 'ynabOnly'].forEach(k => S.result[k].reverse());
@@ -1253,7 +1264,7 @@ $('#from').onchange = onRange;
 $('#to').onchange = onRange;
 $('#btnAllDates').onclick = () => { $('#from').value = ''; $('#to').value = ''; onRange(); };
 // Bump on every change, so it's easy to tell an old copy from the current one.
-const VERSION = '2026-10-23b';
+const VERSION = '2026-10-23c';
 $('#stamp').textContent = new Date().toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) + ` · version ${VERSION}`;
 $('#fileTable').addEventListener('change', e => {
   const f = S.files.find(f => f.id === +e.target.closest('tr').dataset.id);
