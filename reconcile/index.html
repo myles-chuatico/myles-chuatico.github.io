@@ -93,6 +93,7 @@ main>section{background:var(--bg);box-shadow:0 0 0 16px var(--bg)}
 #fileTable tr.check>td{background:var(--fill);padding:14px 16px 18px}
 #fileTable tr.check p{margin:0 0 10px}
 .warn{color:var(--warn)}
+.rowhint{font-size:13px;color:var(--warn);max-width:340px;margin-top:2px}
 .tbl tr.del td:not(:first-child){color:#b3261e;text-decoration:line-through;text-decoration-thickness:1px}
 .hints span{display:inline-block;font-size:13.5px;color:var(--warn);margin-right:10px;white-space:nowrap}
 .tbl tr.del .hints span{text-decoration:none}
@@ -1004,7 +1005,7 @@ function render() {
   const sel = key !== 'cleared';
   const cb = (i, x, dis) => sel ? `<td><input type="checkbox" data-k="${key}" data-i="${i}" ${x.on ? 'checked' : ''} ${dis ? 'disabled' : ''}></td>` : '';
   const acc = x => multi ? `<td class="muted desc">${esc(acctName(x.acct))}</td>` : '';
-  const bank = b => `<td class="date">${fmtDate(b.date)}</td><td><div class="desc" title="${esc(b.desc)}">${esc(prettyDesc(b.desc))}</div></td>`;
+  const bank = (b, hint) => `<td class="date">${fmtDate(b.date)}</td><td><div class="desc" title="${esc(b.desc)}">${esc(prettyDesc(b.desc))}</div>${hint ? `<div class="rowhint">${esc(hint)}</div>` : ''}</td>`;
   const ynab = y => `<td class="date">${fmtDate(y.date)}</td><td><div class="desc">${esc(y.payee_name || '')}${y.memo ? ` <span class="muted">· ${esc(y.memo)}</span>` : ''}</div></td>`;
   // No select-all for deletes: each one is ticked on purpose.
   const th = cols => `<tr>${sel ? (key === 'ynabOnly' ? '<th><span class="sr">Delete</span></th>' : `<th><input type="checkbox" data-all="${key}" ${items.every(x => x.on || x.split) ? 'checked' : ''} aria-label="Select all"></th>`) : ''}${multi ? '<th>Account</th>' : ''}${cols.replace('<th>Date</th>',
@@ -1013,7 +1014,7 @@ function render() {
   let head = '', rows = [];
   if (key === 'missing') {
     head = th('<th>Date</th><th>Statement</th><th class="num">Amount</th><th>Payee</th><th>Category</th>');
-    rows = items.map((x, i) => { const tr = isTransferPayee(x.payee); return `<tr data-k="missing" data-i="${i}" class="${x.on ? '' : 'off'}">${cb(i, x)}${acc(x)}${bank(x.b)}<td class="num">${money(x.b.amount)}${x.hint ? `<div class="flag">${esc(x.hint)}</div>` : ''}</td>
+    rows = items.map((x, i) => { const tr = isTransferPayee(x.payee); return `<tr data-k="missing" data-i="${i}" class="${x.on ? '' : 'off'}">${cb(i, x)}${acc(x)}${bank(x.b, x.hint)}<td class="num">${money(x.b.amount)}</td>
       <td><input type="text" data-k="payee" autocomplete="off" role="combobox" aria-autocomplete="list" value="${esc(x.payee)}"></td><td>${catInput(x.categoryId, tr)}${tr ? '<span class="flag">transfer</span>' : ''}</td></tr>`; });
   } else if (key === 'near') {
     head = th('<th>Date</th><th>Statement</th><th class="num">Bank</th><th>YNAB date</th><th>YNAB payee</th><th class="num">YNAB</th><th class="num">Diff</th>');
@@ -1252,7 +1253,7 @@ $('#from').onchange = onRange;
 $('#to').onchange = onRange;
 $('#btnAllDates').onclick = () => { $('#from').value = ''; $('#to').value = ''; onRange(); };
 // Bump on every change, so it's easy to tell an old copy from the current one.
-const VERSION = '2026-10-23';
+const VERSION = '2026-10-23b';
 $('#stamp').textContent = new Date().toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) + ` · version ${VERSION}`;
 $('#fileTable').addEventListener('change', e => {
   const f = S.files.find(f => f.id === +e.target.closest('tr').dataset.id);
