@@ -899,8 +899,11 @@ async function run() {
         if (nb.has(i)) continue;
         const b = bank[i], payee = suggestPayee(b.desc);
         // The guard above can be wrong when an entry was cleared outside this page with an earlier date: say so.
-        const twin = y.find(t => t.date < min && t.cleared !== 'uncleared' && t.amount === b.amount && Math.abs(dayDiff(b.date, t.date)) <= win && Math.max(sim(b.n, t.n), sim(b.n, t.n2)) >= 0.5);
-        R.missing.push({ acct, b, payee, categoryId: catByPayee[payee] || '', on: true, hint: twin && `Maybe already in YNAB: ${twin.payee_name || 'no payee'}, ${fmtDate(twin.date)}, ${twin.cleared}` });
+        const alike = t => t.account_id === acct && !t.deleted && t.amount === b.amount && Math.max(sim(b.n, t.n), sim(b.n, t.n2)) >= 0.5;
+        const twin = y.find(t => t.date < min && t.cleared !== 'uncleared' && Math.abs(dayDiff(b.date, t.date)) <= win && alike(t));
+        // Skip the hint for habits (a daily coffee): 3+ of the same in the 30 days before means it's just another one.
+        const habit = S.tx.filter(t => t.date < min && t.date >= addDays(min, -30) && alike(t)).length >= 3;
+        R.missing.push({ acct, b, payee, categoryId: catByPayee[payee] || '', on: true, hint: twin && !habit && `Maybe already in YNAB: ${twin.payee_name || 'no payee'}, ${fmtDate(twin.date)}, ${twin.cleared}` });
       }
       // YNAB-only rows can be deleted, never by default. Hints say why a row might (or might not) be wrong.
       const matchedY = [...usedY].map(j => y[j]);
@@ -1248,7 +1251,9 @@ const onRange = () => {
 $('#from').onchange = onRange;
 $('#to').onchange = onRange;
 $('#btnAllDates').onclick = () => { $('#from').value = ''; $('#to').value = ''; onRange(); };
-$('#stamp').textContent = new Date().toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+// Bump on every change, so it's easy to tell an old copy from the current one.
+const VERSION = '2026-10-23';
+$('#stamp').textContent = new Date().toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) + ` · version ${VERSION}`;
 $('#fileTable').addEventListener('change', e => {
   const f = S.files.find(f => f.id === +e.target.closest('tr').dataset.id);
   if (e.target.dataset.f === 'account') f.accountId = e.target.value;
